@@ -22,7 +22,17 @@
       "dummy"
     ],
     "resources": {
-      "media": []
+      "media": [
+         {
+            "type": "bitmap",
+            "name": "BACKGROUND_BW_IMAGE",
+            "file": "aii_bw.png"
+          }
+      ]
+    },
+    "messageKeys": {
+    "WEATHER_TEMPERATURE_KEY": 1,
+    "WEATHER_TEMPERATURE_FORE_KEY": 2
     }
   }
 }
