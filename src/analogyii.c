@@ -3,12 +3,13 @@
 #define CONFIG_INVERTED 0
 #define CONFIG_CENTER_SECONDS_X 72
 #define CONFIG_CENTER_SECONDS_Y 115
-#define CONFIG_RADIUS_SECS_CIRCLE 15
-#define CONFIG_HAND_LENGTH_SEC 12
-#define CONFIG_HAND_LENGTH_HOUR 35
-#define CONFIG_HAND_LENGTH_MIN 52
+#define CONFIG_RADIUS_SECS_CIRCLE 18
+#define CONFIG_HAND_LENGTH_SEC 15
+#define CONFIG_HAND_LENGTH_HOUR 45
+#define CONFIG_HAND_LENGTH_MIN 65
 #define THICKNESS_MINUTES 4
 #define THICKNESS_HOUR 4
+#define THICKNESSMARKS 4
 #define THICKNESS_SECONDS 2
 #define DRAW_PATH_HAND 0
 #define CONFIG_X_START_INFO_BOX 100
@@ -37,8 +38,8 @@ static unsigned int last_time_weather;
 static Window *s_main_window;
 static Layer *s_bg_layer,  *s_canvas_layer, *s_forecast_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer;
-static BitmapLayer *s_background_layer;
-static GBitmap *s_background_bitmap;
+static Layer *s_background_layer;
+//static GBitmap *s_background_bitmap;
 
 //static temp_vals[];
 
@@ -54,6 +55,51 @@ static const GPathInfo HOUR_HAND_PATH = {
   .num_points = 4,
   .points = (GPoint []) {{-3, 0}, {-3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, 0}}
 };
+
+
+
+static int32_t getMarkSize(int h){
+  int32_t resultado = 75;
+  switch(h){
+    case 0  :
+       resultado = 75;
+       break; 
+    case 1  :
+       resultado = 95;
+       break; 
+    case 2  :
+       resultado = 75;
+       break;    
+    case 3  :
+       resultado = 65;
+       break;    
+    case 4  :
+       resultado = 75;
+       break;    
+    case 5  :
+       resultado = 90;
+       break;    
+    case 6  :
+       resultado = 77;
+       break;    
+    case 7  :
+       resultado = 90;
+       break;    
+    case 8  :
+       resultado = 79;
+       break;    
+    case 9  :
+       resultado = 69;
+       break;    
+    case 10  :
+       resultado = 79 ;
+       break;    
+    case 11  :
+       resultado = 95;
+       break;       
+} 
+return resultado;
+}
 
 
 /*
@@ -76,21 +122,91 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
     .x = (int16_t)CONFIG_CENTER_SECONDS_X,
     .y = (int16_t)CONFIG_CENTER_SECONDS_Y,
   };
+  GRect bounds = layer_get_bounds(layer);
+  GPoint center = grect_center_point(&bounds);
+// Aplite
 
-  // Aplite
-  if (CONFIG_INVERTED){
-    graphics_context_set_stroke_color(ctx, GColorBlack);
-    graphics_context_set_fill_color(ctx, GColorBlack);
-  }else{
-    graphics_context_set_stroke_color(ctx, GColorWhite);
-    graphics_context_set_fill_color(ctx, GColorWhite);
+
+  for(int h = 0; h < 12; h++) { 
+
+
+
+        GPoint point = (GPoint) {
+          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
+          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
+        };
+
+        GPoint point02 = (GPoint) {
+          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.x,
+          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.y,
+        };
+
+        if (h == 0 || h == 3 || h ==6 || h == 9){
+            #if defined(PBL_COLOR)
+                graphics_context_set_stroke_color(ctx, GColorWhite);
+                graphics_context_set_fill_color(ctx, GColorWhite);
+            #elif defined(PBL_BW)
+              if (CONFIG_INVERTED){
+                graphics_context_set_stroke_color(ctx, GColorBlack);
+                graphics_context_set_fill_color(ctx, GColorBlack);
+              }else{
+                graphics_context_set_stroke_color(ctx, GColorWhite);
+                graphics_context_set_fill_color(ctx, GColorWhite);
+              }
+            #endif
+            }else{
+                #if defined(PBL_COLOR)
+                    graphics_context_set_stroke_color(ctx, GColorYellow);
+                    graphics_context_set_fill_color(ctx, GColorYellow);
+                #elif defined(PBL_BW)
+                  if (CONFIG_INVERTED){
+                    graphics_context_set_stroke_color(ctx, GColorBlack);
+                    graphics_context_set_fill_color(ctx, GColorBlack);
+                  }else{
+                    graphics_context_set_stroke_color(ctx, GColorWhite);
+                    graphics_context_set_fill_color(ctx, GColorWhite);
+                  }
+                #endif
+            }
+              
+            for(int y = 0; y < THICKNESSMARKS; y++) {
+              for(int x = 0; x < THICKNESSMARKS; x++) {
+                graphics_draw_line(ctx, GPoint(point02.x + x, point02.y + y), GPoint(point.x + x, point.y + y));
+              }
+            }
+    
   }
+
+    #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorWhite);
+      graphics_context_set_fill_color(ctx, GColorWhite);
+  #elif defined(PBL_BW)
+    if (CONFIG_INVERTED){
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      graphics_context_set_fill_color(ctx, GColorBlack);
+    }else{
+      graphics_context_set_stroke_color(ctx, GColorWhite);
+      graphics_context_set_fill_color(ctx, GColorWhite);
+    }
+  #endif
+  
   // Seconds circle
   graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+
+
+
+ 
   // Marks  
   //graphics_fill_rect(ctx, GRect(70, 0, 4,10), 1, GCornersAll);  
   // Day window
-  graphics_fill_rect(ctx, GRect(CONFIG_X_START_INFO_BOX+10, 75, 25,22), 1, GCornersAll);  
+  // 
+  //graphics_fill_rect(ctx, GRect(CONFIG_X_START_INFO_BOX+10, 75, 25,22), 1, GCornersAll);  
 
 
 }
@@ -198,6 +314,18 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       }
     }
    
+    #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorRed);
+      graphics_context_set_fill_color(ctx, GColorRed);
+    #elif defined(PBL_BW)
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }
+    #endif
 
     for(int y = 0; y < THICKNESS_HOUR; y++) {
       for(int x = 0; x < THICKNESS_HOUR; x++) {
@@ -206,6 +334,18 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     }
 
 
+     #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorVividCerulean);
+      graphics_context_set_fill_color(ctx, GColorVividCerulean);
+    #elif defined(PBL_BW)
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }
+    #endif
 
       for(int y = 0; y < THICKNESS_SECONDS; y++) {
         for(int x = 0; x < THICKNESS_SECONDS; x++) {       
@@ -301,7 +441,7 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_bg_layer, bg_update_proc);
   layer_add_child(window_layer, s_bg_layer);
 
-  s_weekday_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 59, 44, 40));
+  s_weekday_layer = text_layer_create(GRect(25, 33, 44, 40));
   text_layer_set_text_alignment(s_weekday_layer, GTextAlignmentCenter);
   text_layer_set_font(s_weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   if (CONFIG_INVERTED){
@@ -311,16 +451,17 @@ static void window_load(Window *window) {
   }
   text_layer_set_background_color(s_weekday_layer, GColorClear);
 
-  s_day_in_month_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 69, 44, 40));
+  s_day_in_month_layer = text_layer_create(GRect(50, 25, 44, 40));
   text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_day_in_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   if (CONFIG_INVERTED){
-    text_layer_set_text_color(s_day_in_month_layer, GColorWhite);
-  }else{
     text_layer_set_text_color(s_day_in_month_layer, GColorBlack);
-  }  text_layer_set_background_color(s_day_in_month_layer, GColorClear);
+  }else{
+    text_layer_set_text_color(s_day_in_month_layer, GColorWhite);
+  }  
+  text_layer_set_background_color(s_day_in_month_layer, GColorClear);
 
-  s_month_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 94, 44, 40));
+  s_month_layer = text_layer_create(GRect(75, 33, 44, 40));
   text_layer_set_text_alignment(s_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   if (CONFIG_INVERTED){
@@ -354,10 +495,10 @@ static void window_load(Window *window) {
   // s_forecast_layer = layer_create(GRect(CONFIG_X_START_INFO_BOX+10, 24, 44, 40));
   // layer_set_update_proc(s_forecast_layer, update_forecast_graph);
 
-
-  s_background_layer = bitmap_layer_create(bounds);
-  bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
-  bitmap_layer_set_compositing_mode(s_background_layer, GCompOpSet);
+// TODO: Change sizes
+  s_background_layer = layer_create(GRect(0, 0, 144, 168));
+ // bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
+ // bitmap_layer_set_compositing_mode(s_background_layer, GCompOpSet);
 
   s_canvas_layer = layer_create(bounds);
   layer_set_update_proc(s_canvas_layer, draw_proc);
@@ -368,11 +509,11 @@ static void window_load(Window *window) {
   text_layer_set_text(s_month_layer, s_month_buffer);
  // text_layer_set_text(s_temperature_layer, "...");  
 
-  layer_add_child(window_layer, bitmap_layer_get_layer(s_background_layer));
+  layer_add_child(window_layer, s_background_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_day_in_month_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
-  layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
+  //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
   //layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
   layer_add_child(window_layer, s_canvas_layer);
   //layer_add_child(window_layer, s_forecast_layer);
@@ -388,7 +529,7 @@ static void window_load(Window *window) {
 
 
 static void window_unload(Window *window) {
-  bitmap_layer_destroy(s_background_layer);
+  layer_destroy(s_background_layer);
   layer_destroy(s_bg_layer);
   layer_destroy(s_canvas_layer);
   text_layer_destroy(s_weekday_layer);
@@ -399,7 +540,7 @@ static void window_unload(Window *window) {
   //layer_destroy(s_forecast_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
-  gbitmap_destroy(s_background_bitmap);
+ // gbitmap_destroy(s_background_bitmap);
 
  
 
@@ -452,7 +593,7 @@ static void outbox_failed_callback(DictionaryIterator *iter,
 static void init() {
   tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
   s_main_window = window_create();
-  s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
+ // s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
 
   //Aplite
   if (CONFIG_INVERTED){

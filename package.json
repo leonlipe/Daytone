@@ -22,12 +22,7 @@
       "dummy"
     ],
     "resources": {
-      "media": [
-         {
-            "type": "bitmap",
-            "name": "BACKGROUND_BW_IMAGE",
-            "file": "aii_bw.png"
-          }
+      "media": [        
       ]
     },
     "messageKeys": {
