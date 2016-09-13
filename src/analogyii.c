@@ -270,7 +270,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     Time now = s_last_time;
 
     GPoint second_hand_long = make_hand_point(now.seconds, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
-    GPoint second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 8, center_seconds);
+    GPoint second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 10, center_seconds);
     float minute_angle = TRIG_MAX_ANGLE * now.minutes / 60; //now.minutes
     float hour_angle = TRIG_MAX_ANGLE * now.hours / 12; //now.hours
     hour_angle += (minute_angle / TRIG_MAX_ANGLE) * (TRIG_MAX_ANGLE / 12);
@@ -349,7 +349,20 @@ static void draw_proc(Layer *layer, GContext *ctx) {
         graphics_context_set_fill_color(ctx, GColorWhite);
       }
     #endif
-    graphics_fill_circle(ctx, GPoint(center_seconds.x + 1, center_seconds.y + 1), 1);
+    graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 2);
+     #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      graphics_context_set_fill_color(ctx, GColorBlack);
+    #elif defined(PBL_BW)
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }
+    #endif
+    graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
 
      // Aplite
     if (CONFIG_INVERTED){
