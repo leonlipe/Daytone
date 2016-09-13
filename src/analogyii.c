@@ -2,9 +2,9 @@
 
 #define CONFIG_INVERTED 0
 #define CONFIG_CENTER_SECONDS_X 72
-#define CONFIG_CENTER_SECONDS_Y 115
-#define CONFIG_RADIUS_SECS_CIRCLE 18
-#define CONFIG_HAND_LENGTH_SEC 15
+#define CONFIG_CENTER_SECONDS_Y 120
+#define CONFIG_HAND_LENGTH_SEC 18
+#define CONFIG_RADIUS_SECS_CIRCLE 21
 #define CONFIG_HAND_LENGTH_HOUR 45
 #define CONFIG_HAND_LENGTH_MIN 65
 #define THICKNESS_MINUTES 4
@@ -56,6 +56,21 @@ static const GPathInfo HOUR_HAND_PATH = {
   .points = (GPoint []) {{-3, 0}, {-3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, 0}}
 };
 
+int inverse_hand(int actual_time){
+  int new_time = actual_time + 30;
+  if (new_time > 60){
+    new_time -= 60;
+  }
+  return new_time;
+}  
+
+int inverse_hand_hour(int actual_time){
+  int new_time = actual_time + 6;
+  if (new_time > 12){
+    new_time -= 12;
+  }
+  return new_time;  
+}
 
 
 static int32_t getMarkSize(int h){
@@ -248,16 +263,19 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
     GPoint center = grect_center_point(&bounds);
     GPoint center_seconds = (GPoint) {
-      .x = (int16_t)72,
-      .y = (int16_t)115,
+      .x = (int16_t)CONFIG_CENTER_SECONDS_X,
+      .y = (int16_t)CONFIG_CENTER_SECONDS_Y,
     };
 
     Time now = s_last_time;
 
     GPoint second_hand_long = make_hand_point(now.seconds, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
+    GPoint second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 8, center_seconds);
     float minute_angle = TRIG_MAX_ANGLE * now.minutes / 60; //now.minutes
     float hour_angle = TRIG_MAX_ANGLE * now.hours / 12; //now.hours
     hour_angle += (minute_angle / TRIG_MAX_ANGLE) * (TRIG_MAX_ANGLE / 12);
+    float hour_angle_inverse = TRIG_MAX_ANGLE * inverse_hand_hour(now.hours) / 12; //now.hours
+    hour_angle_inverse += (minute_angle / TRIG_MAX_ANGLE) * (TRIG_MAX_ANGLE / 12);
 
   if (DRAW_PATH_HAND){
       // Draw Hours Hand
@@ -288,10 +306,51 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       graphics_context_set_stroke_color(ctx, GColorWhite);
       graphics_context_set_fill_color(ctx, GColorWhite);
     }
+
+
     graphics_draw_line(ctx, GPoint(center_seconds.x , center_seconds.y ), GPoint(second_hand_long.x, second_hand_long.y ));
+    graphics_draw_line(ctx, GPoint(center_seconds.x , center_seconds.y ), GPoint(second_hand_inverted.x, second_hand_inverted.y ));
 
 
   }else{
+
+    // En caso que no se utilice un path para las manecillas
+
+     #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorVividCerulean);
+      graphics_context_set_fill_color(ctx, GColorVividCerulean);
+    #elif defined(PBL_BW)
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }
+    #endif
+
+      for(int y = 0; y < THICKNESS_SECONDS; y++) {
+        for(int x = 0; x < THICKNESS_SECONDS; x++) {       
+          graphics_draw_line(ctx, GPoint(center_seconds.x + x, center_seconds.y+y ), GPoint(second_hand_long.x + x, second_hand_long.y+y ));
+          graphics_draw_line(ctx, GPoint(center_seconds.x + x , center_seconds.y+y ), GPoint(second_hand_inverted.x+x, second_hand_inverted.y+y ));
+        }
+      }
+
+
+    #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorWhite);
+      graphics_context_set_fill_color(ctx, GColorWhite);
+    #elif defined(PBL_BW)
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }
+    #endif
+    graphics_fill_circle(ctx, GPoint(center_seconds.x + 1, center_seconds.y + 1), 1);
+
      // Aplite
     if (CONFIG_INVERTED){
       graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -302,15 +361,22 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     }
 
     GPoint minute_hand_long = make_hand_point(now.minutes, 60, CONFIG_HAND_LENGTH_MIN, center);    
+    GPoint minute_hand_inverse = make_hand_point(inverse_hand(now.minutes), 60, 10, center);
     GPoint hour_hand_long = (GPoint) {
       .x = (int16_t)(sin_lookup(hour_angle) * (int32_t)CONFIG_HAND_LENGTH_HOUR / TRIG_MAX_RATIO) + center.x,
       .y = (int16_t)(-cos_lookup(hour_angle) * (int32_t)CONFIG_HAND_LENGTH_HOUR / TRIG_MAX_RATIO) + center.y,
+    };
+
+    GPoint hour_hand_inverse = (GPoint) {
+      .x = (int16_t)(sin_lookup(hour_angle_inverse) * (int32_t)(8) / TRIG_MAX_RATIO) + center.x,
+      .y = (int16_t)(-cos_lookup(hour_angle_inverse) * (int32_t)(8) / TRIG_MAX_RATIO) + center.y,
     };
 
 
     for(int y = 0; y < THICKNESS_MINUTES; y++) {
       for(int x = 0; x < THICKNESS_MINUTES; x++) {
         graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_long.x + x, minute_hand_long.y + y));
+        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_inverse.x + x, minute_hand_inverse.y + y));
       }
     }
    
@@ -330,28 +396,12 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     for(int y = 0; y < THICKNESS_HOUR; y++) {
       for(int x = 0; x < THICKNESS_HOUR; x++) {
         graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(hour_hand_long.x + x, hour_hand_long.y + y));
+        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(hour_hand_inverse.x + x, hour_hand_inverse.y + y));
       }
     }
 
 
-     #if defined(PBL_COLOR)
-      graphics_context_set_stroke_color(ctx, GColorVividCerulean);
-      graphics_context_set_fill_color(ctx, GColorVividCerulean);
-    #elif defined(PBL_BW)
-      if (CONFIG_INVERTED){
-        graphics_context_set_stroke_color(ctx, GColorBlack);
-        graphics_context_set_fill_color(ctx, GColorBlack);
-      }else{
-        graphics_context_set_stroke_color(ctx, GColorWhite);
-        graphics_context_set_fill_color(ctx, GColorWhite);
-      }
-    #endif
-
-      for(int y = 0; y < THICKNESS_SECONDS; y++) {
-        for(int x = 0; x < THICKNESS_SECONDS; x++) {       
-          graphics_draw_line(ctx, GPoint(center_seconds.x + x, center_seconds.y+y ), GPoint(second_hand_long.x + x, second_hand_long.y+y ));
-        }
-      }
+    
   }
 
   
@@ -359,7 +409,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
 
- if (CONFIG_INVERTED){
+  if (CONFIG_INVERTED){
     graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_fill_color(ctx, GColorBlack);
   }else{
@@ -367,8 +417,8 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, GColorWhite);
   }
   
-  graphics_draw_circle(ctx, GPoint(center.x + 1, center.y + 1), 4);
-  graphics_fill_circle(ctx, GPoint(center.x + 1, center.y + 1), 3);
+  graphics_draw_circle(ctx, GPoint(center.x + 1, center.y + 1), 5);
+  graphics_fill_circle(ctx, GPoint(center.x + 1, center.y + 1), 4);
    if (CONFIG_INVERTED){
     graphics_context_set_fill_color(ctx, GColorWhite);
   }else{
