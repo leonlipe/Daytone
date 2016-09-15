@@ -7,8 +7,8 @@
 #define CONFIG_RADIUS_SECS_CIRCLE 21
 #define CONFIG_HAND_LENGTH_HOUR 45
 #define CONFIG_HAND_LENGTH_MIN 65
-#define THICKNESS_MINUTES 4
-#define THICKNESS_HOUR 4
+#define THICKNESS_MINUTES 6
+#define THICKNESS_HOUR 6
 #define THICKNESSMARKS 4
 #define THICKNESS_SECONDS 2
 #define DRAW_PATH_HAND 0
@@ -116,7 +116,11 @@ static int32_t getMarkSize(int h){
 return resultado;
 }
 
-
+static int32_t getMarkSizeForMinutes(int m){
+  int32_t resultado = 75;
+ 
+  return resultado;
+}
 /*
  * Este procedimiento devuelve un punto relativo al centro de la pantalla, para poder dibujar
  * una manecilla.
@@ -139,9 +143,50 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
   };
   GRect bounds = layer_get_bounds(layer);
   GPoint center = grect_center_point(&bounds);
-// Aplite
 
 
+  // Marcas 
+  for(int m = 0; m < 60; m++) { 
+    GPoint point = (GPoint) {
+          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
+          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
+        };
+
+        GPoint point02 = (GPoint) {
+          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.x,
+          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.y,
+        };
+
+       
+            #if defined(PBL_COLOR)
+                graphics_context_set_stroke_color(ctx, GColorWhite);
+                graphics_context_set_fill_color(ctx, GColorWhite);
+            #elif defined(PBL_BW)
+              if (CONFIG_INVERTED){
+                graphics_context_set_stroke_color(ctx, GColorBlack);
+                graphics_context_set_fill_color(ctx, GColorBlack);
+              }else{
+                graphics_context_set_stroke_color(ctx, GColorWhite);
+                graphics_context_set_fill_color(ctx, GColorWhite);
+              }
+            #endif
+            
+              
+            
+                graphics_draw_line(ctx, GPoint(point02.x , point02.y ), GPoint(point.x , point.y));
+            
+  }
+
+  // Delete long lines
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, GRect(2, 2, 140,164), 1, GCornersAll);  
   for(int h = 0; h < 12; h++) { 
 
 
@@ -420,24 +465,28 @@ static void draw_proc(Layer *layer, GContext *ctx) {
   
 
 
+    #if defined(PBL_COLOR)
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      graphics_context_set_fill_color(ctx, GColorWhite);
+    #elif defined(PBL_BW)        
+      if (CONFIG_INVERTED){
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_fill_color(ctx, GColorBlack);
+      }else{
+        graphics_context_set_stroke_color(ctx, GColorBlack);
+        graphics_context_set_fill_color(ctx, GColorWhite);
+      }
+    #endif
 
-
-  if (CONFIG_INVERTED){
-    graphics_context_set_stroke_color(ctx, GColorWhite);
-    graphics_context_set_fill_color(ctx, GColorBlack);
-  }else{
-    graphics_context_set_stroke_color(ctx, GColorBlack);
-    graphics_context_set_fill_color(ctx, GColorWhite);
-  }
   
-  graphics_draw_circle(ctx, GPoint(center.x + 1, center.y + 1), 5);
-  graphics_fill_circle(ctx, GPoint(center.x + 1, center.y + 1), 4);
+  graphics_draw_circle(ctx, GPoint(center.x + 2, center.y + 2), 5);
+  graphics_fill_circle(ctx, GPoint(center.x + 2, center.y + 2), 4);
    if (CONFIG_INVERTED){
     graphics_context_set_fill_color(ctx, GColorWhite);
   }else{
     graphics_context_set_fill_color(ctx, GColorBlack);
   }
-  graphics_fill_circle(ctx, GPoint(center.x + 1, center.y + 1), 1);
+  graphics_fill_circle(ctx, GPoint(center.x + 2, center.y + 2), 1);
 
   
 
