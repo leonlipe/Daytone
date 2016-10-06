@@ -2,14 +2,14 @@
 
 #define CONFIG_INVERTED 0
 #define CONFIG_CENTER_SECONDS_X 72
-#define CONFIG_CENTER_SECONDS_Y 120
-#define CONFIG_HAND_LENGTH_SEC 18
-#define CONFIG_RADIUS_SECS_CIRCLE 21
+#define CONFIG_CENTER_SECONDS_Y 125
+#define CONFIG_HAND_LENGTH_SEC 22
+#define CONFIG_RADIUS_SECS_CIRCLE 23
 #define CONFIG_HAND_LENGTH_HOUR 45
 #define CONFIG_HAND_LENGTH_MIN 65
-#define THICKNESS_MINUTES 6
-#define THICKNESS_HOUR 6
-#define THICKNESSMARKS 4
+#define THICKNESS_MINUTES 4
+#define THICKNESS_HOUR 4
+#define THICKNESSMARKS 5
 #define THICKNESS_SECONDS 2
 #define DRAW_PATH_HAND 0
 #define CONFIG_X_START_INFO_BOX 100
@@ -19,8 +19,38 @@
 
 #define WEATHER_TEMPERATURE_KEY 1
 #define WEATHER_TEMPERATURE_FORE_KEY 2
+#define SHOW_MINUTES_MARKS 1
+#define SHOW_HOUR_MARKS 1
+#define TIME_NUMERALS_FONT FONT_KEY_LECO_20_BOLD_NUMBERS
+#define HOUR_MARKERS_COLOR GColorLightGray
+#define XPOS_12H 55
+#define XPOS_01H 95
+#define XPOS_02H 105
+#define XPOS_03H 105
+#define XPOS_04H 105
+#define XPOS_05H 95
+#define XPOS_06H 55
+#define XPOS_07H 15
+#define XPOS_08H 5
+#define XPOS_09H 5
+#define XPOS_10H 5
+#define XPOS_11H 15
 
+#define YPOS_12H 10
+#define YPOS_01H 10
+#define YPOS_02H 40
+#define YPOS_03H 75
+#define YPOS_04H 110
+#define YPOS_05H 135
+#define YPOS_06H 138
+#define YPOS_07H 135
+#define YPOS_08H 110
+#define YPOS_09H 75
+#define YPOS_10H 40
+#define YPOS_11H 10
 
+#define XLENHOURS 40
+#define YLENHOURS 40
 
 // Message sizes
 const uint32_t inbox_size = 64;
@@ -36,7 +66,8 @@ typedef struct {
 static unsigned int last_time_weather;
 
 static Window *s_main_window;
-static Layer *s_bg_layer,  *s_canvas_layer, *s_forecast_layer;
+static Layer *s_bg_layer,  *s_canvas_layer, *s_forecast_layer, *s_seconds_layer;
+static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer;
 static Layer *s_background_layer;
 //static GBitmap *s_background_bitmap;
@@ -77,7 +108,7 @@ static int32_t getMarkSize(int h){
   int32_t resultado = 75;
   switch(h){
     case 0  :
-       resultado = 75;
+       resultado = 80;
        break; 
     case 1  :
        resultado = 95;
@@ -133,119 +164,19 @@ static GPoint make_hand_point(int quantity, int intervals, int len, GPoint cente
   };
 }
 
+
 /*
-  Este procedimiento dibuja el fondo de la watchface
+  Este procedimiento dibuja la parte de los segundos (background)
  */
-static void bg_update_proc(Layer *layer, GContext *ctx) {
-  GPoint center_seconds = (GPoint) {
+static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
+   GPoint center_seconds = (GPoint) {
     .x = (int16_t)CONFIG_CENTER_SECONDS_X,
     .y = (int16_t)CONFIG_CENTER_SECONDS_Y,
   };
-  GRect bounds = layer_get_bounds(layer);
-  GPoint center = grect_center_point(&bounds);
-
-
-  // Marcas 
-  for(int m = 0; m < 60; m++) { 
-    GPoint point = (GPoint) {
-          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
-          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
-          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
-          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
-          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
-        };
-
-        GPoint point02 = (GPoint) {
-          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
-          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
-          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.x,
-          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
-          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.y,
-        };
-
-       
-            #if defined(PBL_COLOR)
-                graphics_context_set_stroke_color(ctx, GColorWhite);
-                graphics_context_set_fill_color(ctx, GColorWhite);
-            #elif defined(PBL_BW)
-              if (CONFIG_INVERTED){
-                graphics_context_set_stroke_color(ctx, GColorBlack);
-                graphics_context_set_fill_color(ctx, GColorBlack);
-              }else{
-                graphics_context_set_stroke_color(ctx, GColorWhite);
-                graphics_context_set_fill_color(ctx, GColorWhite);
-              }
-            #endif
-            
-              
-            
-                graphics_draw_line(ctx, GPoint(point02.x , point02.y ), GPoint(point.x , point.y));
-            
-  }
-
-  // Delete long lines
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_fill_rect(ctx, GRect(2, 2, 140,164), 1, GCornersAll);  
-  for(int h = 0; h < 12; h++) { 
-
-
-
-        GPoint point = (GPoint) {
-          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
-          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
-          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
-          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
-          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
-        };
-
-        GPoint point02 = (GPoint) {
-          //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
-          //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
-          .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.x,
-          //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
-          .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.y,
-        };
-
-        if (h == 0 || h == 3 || h ==6 || h == 9){
-            #if defined(PBL_COLOR)
-                graphics_context_set_stroke_color(ctx, GColorWhite);
-                graphics_context_set_fill_color(ctx, GColorWhite);
-            #elif defined(PBL_BW)
-              if (CONFIG_INVERTED){
-                graphics_context_set_stroke_color(ctx, GColorBlack);
-                graphics_context_set_fill_color(ctx, GColorBlack);
-              }else{
-                graphics_context_set_stroke_color(ctx, GColorWhite);
-                graphics_context_set_fill_color(ctx, GColorWhite);
-              }
-            #endif
-            }else{
-                #if defined(PBL_COLOR)
-                    graphics_context_set_stroke_color(ctx, GColorYellow);
-                    graphics_context_set_fill_color(ctx, GColorYellow);
-                #elif defined(PBL_BW)
-                  if (CONFIG_INVERTED){
-                    graphics_context_set_stroke_color(ctx, GColorBlack);
-                    graphics_context_set_fill_color(ctx, GColorBlack);
-                  }else{
-                    graphics_context_set_stroke_color(ctx, GColorWhite);
-                    graphics_context_set_fill_color(ctx, GColorWhite);
-                  }
-                #endif
-            }
-              
-            for(int y = 0; y < THICKNESSMARKS; y++) {
-              for(int x = 0; x < THICKNESSMARKS; x++) {
-                graphics_draw_line(ctx, GPoint(point02.x + x, point02.y + y), GPoint(point.x + x, point.y + y));
-              }
-            }
-    
-  }
 
     #if defined(PBL_COLOR)
       graphics_context_set_stroke_color(ctx, GColorWhite);
-      graphics_context_set_fill_color(ctx, GColorWhite);
+      graphics_context_set_fill_color(ctx, GColorBlack);
   #elif defined(PBL_BW)
     if (CONFIG_INVERTED){
       graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -255,18 +186,131 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
       graphics_context_set_fill_color(ctx, GColorWhite);
     }
   #endif
-  
-  // Seconds circle
-  graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+    graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
+    graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+    graphics_draw_rect(ctx, GRect(65, 131, 14, 13));  
+    graphics_fill_rect(ctx, GRect(63, 135, 18,5), 0, GCornersAll);  
+    graphics_fill_rect(ctx, GRect(69, 130, 6,14), 0, GCornersAll);  
 
 
 
+
+}
+
+/*
+  Este procedimiento dibuja el fondo de la watchface
+ */
+static void bg_update_proc(Layer *layer, GContext *ctx) {
  
-  // Marks  
-  //graphics_fill_rect(ctx, GRect(70, 0, 4,10), 1, GCornersAll);  
-  // Day window
-  // 
-  //graphics_fill_rect(ctx, GRect(CONFIG_X_START_INFO_BOX+10, 75, 25,22), 1, GCornersAll);  
+  GRect bounds = layer_get_bounds(layer);
+  GPoint center = grect_center_point(&bounds);
+
+
+  // Marcas 
+  if ( SHOW_MINUTES_MARKS ){
+    for(int m = 0; m < 60; m++) { 
+      GPoint point = (GPoint) {
+            //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+            //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
+            //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
+          };
+
+          GPoint point02 = (GPoint) {
+            //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+            //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.x,
+            //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.y,
+          };
+
+         
+              #if defined(PBL_COLOR)
+                  graphics_context_set_stroke_color(ctx, GColorWhite);
+                  graphics_context_set_fill_color(ctx, GColorWhite);
+              #elif defined(PBL_BW)
+                if (CONFIG_INVERTED){
+                  graphics_context_set_stroke_color(ctx, GColorBlack);
+                  graphics_context_set_fill_color(ctx, GColorBlack);
+                }else{
+                  graphics_context_set_stroke_color(ctx, GColorWhite);
+                  graphics_context_set_fill_color(ctx, GColorWhite);
+                }
+              #endif
+              
+                
+              
+                  graphics_draw_line(ctx, GPoint(point02.x , point02.y ), GPoint(point.x , point.y));
+              
+    }
+    
+    // Delete long lines
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    graphics_fill_rect(ctx, GRect(2, 2, 140,164), 1, GCornersAll);  
+
+  }
+
+  if ( SHOW_HOUR_MARKS ){
+    for(int h = 0; h < 12; h++) { 
+
+
+
+          GPoint point = (GPoint) {
+            //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+            //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
+            //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
+          };
+
+          GPoint point02 = (GPoint) {
+            //int32_t second_angle = TRIG_MAX_ANGLE * t.tm_sec / 60;
+            //secondHand.x = (sin_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.x;
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.x,
+            //secondHand.y = (-cos_lookup(second_angle) * secondHandLength / TRIG_MAX_RATIO) + center.y;
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * getMarkSize(h) / TRIG_MAX_RATIO) + center.y,
+          };
+
+          if (h == 0 || h == 3 || h ==6 || h == 9){
+              #if defined(PBL_COLOR)
+                  graphics_context_set_stroke_color(ctx, GColorWhite);
+                  graphics_context_set_fill_color(ctx, GColorWhite);
+              #elif defined(PBL_BW)
+                if (CONFIG_INVERTED){
+                  graphics_context_set_stroke_color(ctx, GColorBlack);
+                  graphics_context_set_fill_color(ctx, GColorBlack);
+                }else{
+                  graphics_context_set_stroke_color(ctx, GColorWhite);
+                  graphics_context_set_fill_color(ctx, GColorWhite);
+                }
+              #endif
+              }else{
+                  #if defined(PBL_COLOR)
+                      graphics_context_set_stroke_color(ctx, GColorWhite);
+                      graphics_context_set_fill_color(ctx, GColorWhite);
+                  #elif defined(PBL_BW)
+                    if (CONFIG_INVERTED){
+                      graphics_context_set_stroke_color(ctx, GColorBlack);
+                      graphics_context_set_fill_color(ctx, GColorBlack);
+                    }else{
+                      graphics_context_set_stroke_color(ctx, GColorWhite);
+                      graphics_context_set_fill_color(ctx, GColorWhite);
+                    }
+                  #endif
+              }
+                
+              for(int y = 0; y < THICKNESSMARKS; y++) {
+                for(int x = 0; x < THICKNESSMARKS; x++) {
+                  graphics_draw_line(ctx, GPoint(point02.x + x, point02.y + y), GPoint(point.x + x, point.y + y));
+                }
+              }
+      
+    }
+  }
+
+
 
 
 }
@@ -377,7 +421,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       for(int y = 0; y < THICKNESS_SECONDS; y++) {
         for(int x = 0; x < THICKNESS_SECONDS; x++) {       
           graphics_draw_line(ctx, GPoint(center_seconds.x + x, center_seconds.y+y ), GPoint(second_hand_long.x + x, second_hand_long.y+y ));
-          graphics_draw_line(ctx, GPoint(center_seconds.x + x , center_seconds.y+y ), GPoint(second_hand_inverted.x+x, second_hand_inverted.y+y ));
+        //  graphics_draw_line(ctx, GPoint(center_seconds.x + x , center_seconds.y+y ), GPoint(second_hand_inverted.x+x, second_hand_inverted.y+y ));
         }
       }
 
@@ -409,18 +453,15 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     #endif
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
 
-     // Aplite
-    if (CONFIG_INVERTED){
-      graphics_context_set_stroke_color(ctx, GColorBlack);
-      graphics_context_set_fill_color(ctx, GColorBlack);
-    }else{
-      graphics_context_set_stroke_color(ctx, GColorWhite);
-      graphics_context_set_fill_color(ctx, GColorWhite);
-    }
+     
+   
 
-    GPoint minute_hand_long = make_hand_point(now.minutes, 60, CONFIG_HAND_LENGTH_MIN, center);    
-    GPoint minute_hand_inverse = make_hand_point(inverse_hand(now.minutes), 60, 10, center);
-    GPoint hour_hand_long = (GPoint) {
+   /**
+    * 
+    * Dibujar las horas    
+    */
+   
+   GPoint hour_hand_long = (GPoint) {
       .x = (int16_t)(sin_lookup(hour_angle) * (int32_t)CONFIG_HAND_LENGTH_HOUR / TRIG_MAX_RATIO) + center.x,
       .y = (int16_t)(-cos_lookup(hour_angle) * (int32_t)CONFIG_HAND_LENGTH_HOUR / TRIG_MAX_RATIO) + center.y,
     };
@@ -429,18 +470,9 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       .x = (int16_t)(sin_lookup(hour_angle_inverse) * (int32_t)(8) / TRIG_MAX_RATIO) + center.x,
       .y = (int16_t)(-cos_lookup(hour_angle_inverse) * (int32_t)(8) / TRIG_MAX_RATIO) + center.y,
     };
-
-
-    for(int y = 0; y < THICKNESS_MINUTES; y++) {
-      for(int x = 0; x < THICKNESS_MINUTES; x++) {
-        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_long.x + x, minute_hand_long.y + y));
-        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_inverse.x + x, minute_hand_inverse.y + y));
-      }
-    }
-   
     #if defined(PBL_COLOR)
-      graphics_context_set_stroke_color(ctx, GColorRed);
-      graphics_context_set_fill_color(ctx, GColorRed);
+      graphics_context_set_stroke_color(ctx, GColorLightGray);
+      graphics_context_set_fill_color(ctx, GColorLightGray);
     #elif defined(PBL_BW)
       if (CONFIG_INVERTED){
         graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -458,7 +490,28 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       }
     }
 
+/**
+      * Dibujar los minutos
+      */
+    if (CONFIG_INVERTED){
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      graphics_context_set_fill_color(ctx, GColorBlack);
+    }else{
+      graphics_context_set_stroke_color(ctx, GColorWhite);
+      graphics_context_set_fill_color(ctx, GColorWhite);
+    }
 
+    GPoint minute_hand_long = make_hand_point(now.minutes, 60, CONFIG_HAND_LENGTH_MIN, center);    
+    GPoint minute_hand_inverse = make_hand_point(inverse_hand(now.minutes), 60, 10, center);
+    
+
+
+    for(int y = 0; y < THICKNESS_MINUTES; y++) {
+      for(int x = 0; x < THICKNESS_MINUTES; x++) {
+        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_long.x + x, minute_hand_long.y + y));
+        graphics_draw_line(ctx, GPoint(center.x + x, center.y + y), GPoint(minute_hand_inverse.x + x, minute_hand_inverse.y + y));
+      }
+    }
     
   }
 
@@ -553,9 +606,23 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_bg_layer, bg_update_proc);
   layer_add_child(window_layer, s_bg_layer);
 
-  s_weekday_layer = text_layer_create(GRect(25, 33, 44, 40));
+ // DIA DEL MES
+  s_day_in_month_layer = text_layer_create(GRect(50, 128, 44, 40));
+  text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_day_in_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  if (CONFIG_INVERTED){
+    text_layer_set_text_color(s_day_in_month_layer, GColorBlack);
+  }else{
+    text_layer_set_text_color(s_day_in_month_layer, GColorLightGray);
+  }  
+  text_layer_set_background_color(s_day_in_month_layer, GColorClear);
+  //text_layer_set_text(s_day_in_month_layer, "31");  
+
+
+  // DIA DE LA SEMANA
+  s_weekday_layer = text_layer_create(GRect(100, 78, 44, 40));
   text_layer_set_text_alignment(s_weekday_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_font(s_weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   if (CONFIG_INVERTED){
     text_layer_set_text_color(s_weekday_layer, GColorBlack);
   }else{
@@ -563,19 +630,11 @@ static void window_load(Window *window) {
   }
   text_layer_set_background_color(s_weekday_layer, GColorClear);
 
-  s_day_in_month_layer = text_layer_create(GRect(50, 25, 44, 40));
-  text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_day_in_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-  if (CONFIG_INVERTED){
-    text_layer_set_text_color(s_day_in_month_layer, GColorBlack);
-  }else{
-    text_layer_set_text_color(s_day_in_month_layer, GColorWhite);
-  }  
-  text_layer_set_background_color(s_day_in_month_layer, GColorClear);
-
-  s_month_layer = text_layer_create(GRect(75, 33, 44, 40));
+ 
+  // MES
+  s_month_layer = text_layer_create(GRect(100, 94, 44, 40));
   text_layer_set_text_alignment(s_month_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   if (CONFIG_INVERTED){
     text_layer_set_text_color(s_month_layer, GColorBlack);
   }else{
@@ -583,6 +642,7 @@ static void window_load(Window *window) {
   } 
   text_layer_set_background_color(s_month_layer, GColorClear);
 
+  // DIGITAL TIME
   s_digital_time_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 110, 44, 40));
   text_layer_set_text_alignment(s_digital_time_layer, GTextAlignmentCenter);
   text_layer_set_font(s_digital_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -592,6 +652,95 @@ static void window_load(Window *window) {
     text_layer_set_text_color(s_digital_time_layer, GColorWhite);
   } 
   text_layer_set_background_color(s_digital_time_layer, GColorClear);
+
+  // CAPAS DE LAS HORAS
+  s_12_hour_layer = text_layer_create(GRect(XPOS_12H, YPOS_12H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_12_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_12_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_12_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_12_hour_layer, GColorClear);
+  text_layer_set_text(s_12_hour_layer, "12");  
+
+  s_01_hour_layer = text_layer_create(GRect(XPOS_01H, YPOS_01H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_01_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_01_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_01_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_01_hour_layer, GColorClear);
+  text_layer_set_text(s_01_hour_layer, "1");  
+
+  s_02_hour_layer = text_layer_create(GRect(XPOS_02H, YPOS_02H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_02_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_02_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_02_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_02_hour_layer, GColorClear);
+  text_layer_set_text(s_02_hour_layer, "2");  
+
+  s_03_hour_layer = text_layer_create(GRect(XPOS_03H, YPOS_03H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_03_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_03_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_03_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_03_hour_layer, GColorClear);
+  text_layer_set_text(s_03_hour_layer, "3");  
+
+  s_04_hour_layer = text_layer_create(GRect(XPOS_04H, YPOS_04H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_04_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_04_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_04_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_04_hour_layer, GColorClear);
+  text_layer_set_text(s_04_hour_layer, "4");  
+
+  s_05_hour_layer = text_layer_create(GRect(XPOS_05H, YPOS_05H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_05_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_05_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_05_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_05_hour_layer, GColorClear);
+  text_layer_set_text(s_05_hour_layer, "5");  
+
+  s_06_hour_layer = text_layer_create(GRect(XPOS_06H, YPOS_06H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_06_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_06_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_06_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_06_hour_layer, GColorClear);
+  text_layer_set_text(s_06_hour_layer, "6");  
+
+  s_07_hour_layer = text_layer_create(GRect(XPOS_07H, YPOS_07H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_07_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_07_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_07_hour_layer, GColorWhite);
+  text_layer_set_background_color(s_07_hour_layer, GColorClear);
+  text_layer_set_text(s_07_hour_layer, "7");  
+
+  s_08_hour_layer = text_layer_create(GRect(XPOS_08H, YPOS_08H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_08_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_08_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_08_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_08_hour_layer, GColorClear);
+  text_layer_set_text(s_08_hour_layer, "8");  
+
+  s_09_hour_layer = text_layer_create(GRect(XPOS_09H, YPOS_09H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_09_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_09_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_09_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_09_hour_layer, GColorClear);
+  text_layer_set_text(s_09_hour_layer, "9");  
+
+  s_10_hour_layer = text_layer_create(GRect(XPOS_10H, YPOS_10H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_10_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_10_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_10_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_10_hour_layer, GColorClear);
+  text_layer_set_text(s_10_hour_layer, "10");  
+
+  s_11_hour_layer = text_layer_create(GRect(XPOS_11H, YPOS_11H, XLENHOURS, YLENHOURS));
+  text_layer_set_text_alignment(s_11_hour_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_11_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
+  text_layer_set_text_color(s_11_hour_layer, HOUR_MARKERS_COLOR);
+  text_layer_set_background_color(s_11_hour_layer, GColorClear);
+  text_layer_set_text(s_11_hour_layer, "11");  
+
+
+  s_seconds_layer = layer_create(bounds);
+  layer_set_update_proc(s_seconds_layer, bg_update_seconds_proc);
 
   // s_temperature_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 44, 44, 40));
   // text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
@@ -620,11 +769,25 @@ static void window_load(Window *window) {
   text_layer_set_text(s_day_in_month_layer, s_day_in_month_buffer);
   text_layer_set_text(s_month_layer, s_month_buffer);
  // text_layer_set_text(s_temperature_layer, "...");  
-
   layer_add_child(window_layer, s_background_layer);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_12_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_01_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_02_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_03_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_04_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_05_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_06_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_07_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_08_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_09_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_10_hour_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_11_hour_layer));
+  layer_add_child(window_layer, s_seconds_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_day_in_month_layer));
-  layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer));
-  layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
+ // layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer));
+ // layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
+
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
   //layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
   layer_add_child(window_layer, s_canvas_layer);
@@ -648,6 +811,19 @@ static void window_unload(Window *window) {
   text_layer_destroy(s_day_in_month_layer);
   text_layer_destroy(s_month_layer);
   text_layer_destroy(s_digital_time_layer);
+  text_layer_destroy(s_12_hour_layer);
+  text_layer_destroy(s_01_hour_layer);
+  text_layer_destroy(s_02_hour_layer);
+  text_layer_destroy(s_03_hour_layer);
+  text_layer_destroy(s_04_hour_layer);
+  text_layer_destroy(s_05_hour_layer);
+  text_layer_destroy(s_06_hour_layer);
+  text_layer_destroy(s_07_hour_layer);
+  text_layer_destroy(s_08_hour_layer);
+  text_layer_destroy(s_09_hour_layer);
+  text_layer_destroy(s_10_hour_layer);
+  text_layer_destroy(s_11_hour_layer);
+  layer_destroy(s_seconds_layer);
  // text_layer_destroy(s_temperature_layer);
   //layer_destroy(s_forecast_layer);
   gpath_destroy(s_hour_hand_path_ptr);
