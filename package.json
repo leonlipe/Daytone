@@ -5,6 +5,7 @@
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
+  "capabilities": [ "health" ],
   "pebble": {
     "displayName": "Analogy II",
     "uuid": "54be73a4-1a8f-4d56-93db-a75deaa88c86",
