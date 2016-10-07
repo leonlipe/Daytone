@@ -84,7 +84,7 @@ typedef struct {
 static unsigned int last_time_weather;
 
 static Window *s_main_window;
-static Layer *s_bg_layer,  *s_canvas_layer, *s_forecast_layer, *s_seconds_layer, *s_battery_layer;
+static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer;
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer;
 static Layer *s_background_layer;
@@ -201,6 +201,33 @@ static GPoint make_hand_point(int quantity, int intervals, int len, GPoint cente
 }
 
 
+/*
+  Procedimiento que dibuja el circulo de Pebble Health
+ */
+
+static void health_layer_update(Layer *layer, GContext *ctx) {
+ 
+// 42, 48  ---- 23 radius
+// Dibujar el circulo que servirá para la bateria
+  int health_steps_today = health_get_steps_today();
+  graphics_context_set_fill_color(ctx, GColorMagenta);
+  int steps_goal_percent = 10;
+  if (health_steps_today <= HEALTH_STEPS_GOAL){
+     steps_goal_percent = health_steps_today * 10 / HEALTH_STEPS_GOAL;
+   }
+
+  
+  if (DEBUG)
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %d",health_steps_today );
+
+  graphics_fill_radial(ctx, GRect(81, 27, 43, 43), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
+
+
+}
+
+/* 
+  Procedimiento que dibuja el circulo de la bateria
+*/
 
 static void battery_layer_update(Layer *layer, GContext *ctx) {
  
@@ -402,33 +429,6 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
 
 }
 
-
-static void refresh_temp_fore_graph(char fore[20]){
-  if (DEBUG)
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %s", fore);
-
-    //strtok(fore, "|");
-
-  //while( token != NULL ) {
-     // APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %d", (int)token);
-
-  //  token = strtok(NULL, "|");
-  //}
-    
-
- //graphics_fill_rect(ctx, GRect(CONFIG_X_START_INFO_BOX+10, 75, 25,22), 1, GCornersAll);  
-
-}
-
-static void update_forecast_graph(Layer *layer, GContext *ctx) {
-  // Custom drawing happens here
-  GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_fill_color(ctx, GColorWhite);
-  for (int x = 0; x<5; x++){
-    graphics_fill_rect(ctx, GRect((x+(x*4+1)), 10, 4,12), 0, GCornersAll);  
-  }
-
-}
 
 /*
   Este procedimiento dibuja las manecillas del reloj y todo lo que cambie cada TICK TIME
@@ -724,6 +724,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
   strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ?"%H:%M" : "%I:%M", tick_time);
   text_layer_set_text(s_digital_time_layer, s_buffer);
   layer_mark_dirty(s_canvas_layer);
+  layer_mark_dirty(s_health_layer);
 
   unsigned int now = mktime(tick_time);
   if (now > last_time_weather + SECONDS_FOR_POLL ){
@@ -747,6 +748,8 @@ static void window_load(Window *window) {
 
   s_battery_layer = layer_create(bounds);
   layer_set_update_proc(s_battery_layer, battery_layer_update);
+  s_health_layer = layer_create(bounds);
+  layer_set_update_proc(s_health_layer, health_layer_update);
 
 
  // DIA DEL MES
@@ -901,9 +904,6 @@ static void window_load(Window *window) {
   // text_layer_set_background_color(s_temperature_layer, GColorClear);
 
 
-  // s_forecast_layer = layer_create(GRect(CONFIG_X_START_INFO_BOX+10, 24, 44, 40));
-  // layer_set_update_proc(s_forecast_layer, update_forecast_graph);
-
 // TODO: Change sizes
   s_background_layer = layer_create(GRect(0, 0, 144, 168));
  // bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
@@ -936,12 +936,12 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
   layer_add_child(window_layer, s_battery_layer);
+  layer_add_child(window_layer, s_health_layer);
 
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
   //layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
   layer_add_child(window_layer, s_canvas_layer);
-  //layer_add_child(window_layer, s_forecast_layer);
-
+  
 
    s_hour_hand_path_ptr = gpath_create(&HOUR_HAND_PATH);
    s_minute_hand_path_ptr = gpath_create(&MINUTE_HAND_PATH);
@@ -974,13 +974,13 @@ static void window_unload(Window *window) {
   text_layer_destroy(s_11_hour_layer);
   layer_destroy(s_seconds_layer);
   layer_destroy(s_battery_layer);
+  layer_destroy(s_health_layer);
  // text_layer_destroy(s_temperature_layer);
-  //layer_destroy(s_forecast_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
- // gbitmap_destroy(s_background_bitmap);
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
+  health_service_events_unsubscribe();
 
  
 
@@ -992,7 +992,6 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Mensaje recibido");
 
   static char weather_temp_buff[4];
-  static char weather_temp_fore_buff[20];
   Tuple *t = dict_read_first(iter);
   while(t != NULL) {
     switch(t->key) {
@@ -1001,11 +1000,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
            APP_LOG(APP_LOG_LEVEL_DEBUG, "Temperatura: %d", (int)t->value->int32);
          snprintf(weather_temp_buff, sizeof(weather_temp_buff), "%dC", (int)t->value->int32);
        break;
-        case WEATHER_TEMPERATURE_FORE_KEY:
-         if (DEBUG)
-           APP_LOG(APP_LOG_LEVEL_DEBUG, "Forecast: %s", t->value->cstring);
-         snprintf(weather_temp_fore_buff, sizeof(weather_temp_fore_buff), "%s", t->value->cstring);
-       break;
+       
       default:
         if (DEBUG)
           APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
@@ -1014,7 +1009,6 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
   t = dict_read_next(iter);    
   }
   text_layer_set_text(s_temperature_layer, weather_temp_buff);  
-  refresh_temp_fore_graph(weather_temp_fore_buff);
   
 }
 
@@ -1039,6 +1033,8 @@ static void outbox_failed_callback(DictionaryIterator *iter,
 static void init() {
   tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
   battery_state_service_subscribe(handle_battery);
+  // Inicializa el servicio de Salud
+  health_init();
 
   s_main_window = window_create();
  // s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
