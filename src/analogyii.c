@@ -12,8 +12,12 @@
 #define THICKNESS_HOUR 4
 #define THICKNESSMARKS 5
 #define THICKNESS_SECONDS 2
-#define DRAW_PATH_HAND 0
+
+#define DRAW_PATH_HAND 1
+#define CENTER_HANDS_OFFSET 0
+#define CENTER_HANDS_RADIUS 4
 #define CONFIG_X_START_INFO_BOX 100
+#define PATH_HANDS_INVERSE_LEGTH 15
 
 #define CONFIG_CENTER_INFOLEFT_X 42
 #define CONFIG_CENTER_INFOLEFT_Y 48
@@ -30,7 +34,6 @@
 #define SHOW_MINUTES_MARKS 1
 #define SHOW_HOUR_MARKS 1
 #define TIME_NUMERALS_FONT FONT_KEY_LECO_20_BOLD_NUMBERS
-#define HOUR_MARKERS_COLOR GColorLightGray
 #define XPOS_12H 55
 #define XPOS_01H 95
 #define XPOS_02H 105
@@ -68,6 +71,18 @@
 
 #define DEBUG false
 
+
+#define HOUR_MARKERS_COLOR GColorLightGray
+#define MINUTE_MARKERS_COLOR GColorLightGray
+#define HOUR_HAND_COLOR GColorLightGray
+#define MINUTE_HAND_COLOR GColorWhite
+#define SECONDS_HAND_COLOR  GColorVividCerulean
+#define INFOLEFT_HAND_COLOR  GColorVividCerulean
+#define INFORIGHT_HAND_COLOR GColorVividCerulean
+#define INFOLEFT_CIRCLE_COLOR  GColorVividCerulean
+#define INFORIGHT_CIRCLE_COLOR  GColorVividCerulean
+#define CIRCLES_COLOR  GColorBlack
+
 // Message sizes
 const uint32_t inbox_size = 64;
 const uint32_t outbox_size = 256;
@@ -96,14 +111,23 @@ static Time s_last_time;
 static char s_weekday_buffer[8], s_month_buffer[8], s_day_in_month_buffer[3];
 static int s_weekday_number;
 
-static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL;
+static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hour_hand_path_bold_ptr = NULL, *s_minute_hand_path_bold_ptr = NULL;
 static const GPathInfo MINUTE_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{-3, 0}, {-3, CONFIG_HAND_LENGTH_MIN*-1}, {3, CONFIG_HAND_LENGTH_MIN*-1}, {3, 0}}
+  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, {-3, CONFIG_HAND_LENGTH_MIN*-1}, {3, CONFIG_HAND_LENGTH_MIN*-1}, {3, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{-3, 0}, {-3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, 0}}
+  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, {-3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, PATH_HANDS_INVERSE_LEGTH}}
+};
+
+static const GPathInfo MINUTE_HAND_PATH_BOLD = {
+  .num_points = 4,
+  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, {-4, CONFIG_HAND_LENGTH_MIN*-1}, {4, CONFIG_HAND_LENGTH_MIN*-1}, {4, PATH_HANDS_INVERSE_LEGTH}}
+};
+static const GPathInfo HOUR_HAND_PATH_BOLD = {
+  .num_points = 4,
+  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, {-4, CONFIG_HAND_LENGTH_HOUR*-1}, {4, CONFIG_HAND_LENGTH_HOUR*-1}, {4, PATH_HANDS_INVERSE_LEGTH}}
 };
 
 typedef struct {
@@ -210,7 +234,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
   int health_steps_today = health_get_steps_today();
-  graphics_context_set_fill_color(ctx, GColorMagenta);
+  graphics_context_set_fill_color(ctx, INFORIGHT_CIRCLE_COLOR);
   int steps_goal_percent = 10;
   if (health_steps_today <= HEALTH_STEPS_GOAL){
      steps_goal_percent = health_steps_today * 10 / HEALTH_STEPS_GOAL;
@@ -234,7 +258,7 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
   if(s_last_battery.charge_percent >= 30){
-    graphics_context_set_fill_color(ctx, GColorGreen);
+    graphics_context_set_fill_color(ctx, INFOLEFT_CIRCLE_COLOR);
   }else if(s_last_battery.charge_percent < 30 && s_last_battery.charge_percent >= 20){
     graphics_context_set_fill_color(ctx, GColorYellow);
   }else{
@@ -266,25 +290,25 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
     .y = (int16_t)CONFIG_CENTER_INFORIGHT_Y,
   };
 
-    #if defined(PBL_COLOR)
-      graphics_context_set_stroke_color(ctx, GColorWhite);
-      graphics_context_set_fill_color(ctx, GColorBlack);
-  #elif defined(PBL_BW)
-    if (CONFIG_INVERTED){
-      graphics_context_set_stroke_color(ctx, GColorBlack);
-      graphics_context_set_fill_color(ctx, GColorBlack);
-    }else{
-      graphics_context_set_stroke_color(ctx, GColorWhite);
-      graphics_context_set_fill_color(ctx, GColorWhite);
-    }
-  #endif
+   
     
     if (CIRCLE_SECONDS_AREA){
+      graphics_context_set_stroke_color(ctx, GColorWhite);
+
+      graphics_context_set_fill_color(ctx, GColorBlack);
       graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
+      graphics_context_set_fill_color(ctx, CIRCLES_COLOR);
+      graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE-1);
       graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+      graphics_context_set_fill_color(ctx, GColorBlack);
       graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE+3);
+      graphics_context_set_fill_color(ctx, CIRCLES_COLOR);
+      graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE-1);
       graphics_draw_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE);
+      graphics_context_set_fill_color(ctx, GColorBlack);
       graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE+3);
+      graphics_context_set_fill_color(ctx, CIRCLES_COLOR);
+      graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE-1);
       graphics_draw_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE);
 
     }else{
@@ -298,7 +322,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
       //graphics_fill_rect(ctx, GRect(63, 135, 18,5), 2, GCornersAll);  
     }
 
-      graphics_context_set_fill_color(ctx, GColorBlack);
+      graphics_context_set_fill_color(ctx, CIRCLES_COLOR);
 
     graphics_draw_rect(ctx, GRect(65, CONFIG_CENTER_SECONDS_Y+6, 14, 13));  
     graphics_fill_rect(ctx, GRect(63, CONFIG_CENTER_SECONDS_Y+10, 18,5), 0, GCornersAll);  
@@ -562,26 +586,47 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
   if (DRAW_PATH_HAND){
+    // Move paths depends on the minutes or hours
+    if (s_last_time.minutes == 0 ||  s_last_time.minutes == 15 || s_last_time.minutes == 30 || s_last_time.minutes == 45){
+      gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(200, 200));
+      gpath_move_to(s_minute_hand_path_ptr, GPoint(72, 84));
+      if(s_last_time.minutes == 0){
+        gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(200, 200));
+        gpath_move_to(s_hour_hand_path_ptr, GPoint(72, 84));
+      }else{
+        gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
+        gpath_move_to(s_hour_hand_path_ptr, GPoint(200, 200));
+      }
+    }else{
+      gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
+      gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(72, 84));
+      gpath_move_to(s_hour_hand_path_ptr, GPoint(200, 200));
+      gpath_move_to(s_minute_hand_path_ptr, GPoint(200, 200));
+    }
       // Draw Hours Hand
     gpath_rotate_to(s_hour_hand_path_ptr,hour_angle);
     gpath_rotate_to(s_minute_hand_path_ptr,minute_angle);
-    
-    
-    graphics_context_set_fill_color(ctx, GColorLightGray);
-  
+
+    gpath_rotate_to(s_hour_hand_path_bold_ptr,hour_angle);
+    gpath_rotate_to(s_minute_hand_path_bold_ptr,minute_angle);
+        
+    graphics_context_set_fill_color(ctx, HOUR_HAND_COLOR);
     gpath_draw_filled(ctx, s_hour_hand_path_ptr);
-  
-    graphics_context_set_fill_color(ctx, GColorWhite);
-  
-    gpath_draw_filled(ctx, s_minute_hand_path_ptr);
-
-  
-    graphics_context_set_fill_color(ctx, GColorBlack);
-    
+    gpath_draw_filled(ctx, s_hour_hand_path_bold_ptr);
+    graphics_context_set_fill_color(ctx, GColorBlack);    
     gpath_draw_outline(ctx, s_hour_hand_path_ptr);  
-    gpath_draw_outline(ctx, s_minute_hand_path_ptr);  
-
+    gpath_draw_outline(ctx, s_hour_hand_path_bold_ptr);  
   
+
+    graphics_context_set_fill_color(ctx, MINUTE_HAND_COLOR);
+    gpath_draw_filled(ctx, s_minute_hand_path_ptr);
+    gpath_draw_filled(ctx, s_minute_hand_path_bold_ptr);
+    graphics_context_set_fill_color(ctx, GColorBlack);    
+    gpath_draw_outline(ctx, s_minute_hand_path_ptr);  
+    gpath_draw_outline(ctx, s_minute_hand_path_bold_ptr);  
+
+
+
 
   }else{
 
@@ -664,15 +709,16 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       }
     #endif
 
-  graphics_draw_circle(ctx, GPoint(center.x + 2, center.y + 2), 5);
-  graphics_fill_circle(ctx, GPoint(center.x + 2, center.y + 2), 4);
+  
+  graphics_draw_circle(ctx, GPoint(center.x + CENTER_HANDS_OFFSET, center.y + CENTER_HANDS_OFFSET), CENTER_HANDS_RADIUS);
+  graphics_fill_circle(ctx, GPoint(center.x+ CENTER_HANDS_OFFSET , center.y + CENTER_HANDS_OFFSET), CENTER_HANDS_RADIUS-1);
 
    if (CONFIG_INVERTED){
     graphics_context_set_fill_color(ctx, GColorWhite);
   }else{
     graphics_context_set_fill_color(ctx, GColorBlack);
   }
-  graphics_fill_circle(ctx, GPoint(center.x + 2, center.y + 2), 1);
+  graphics_fill_circle(ctx, GPoint(center.x + CENTER_HANDS_OFFSET, center.y + CENTER_HANDS_OFFSET ), 1);
 
   
 
@@ -943,12 +989,17 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
   
 
+   s_hour_hand_path_bold_ptr = gpath_create(&HOUR_HAND_PATH_BOLD);
+   s_minute_hand_path_bold_ptr = gpath_create(&MINUTE_HAND_PATH_BOLD);
    s_hour_hand_path_ptr = gpath_create(&HOUR_HAND_PATH);
    s_minute_hand_path_ptr = gpath_create(&MINUTE_HAND_PATH);
   
   // Translate by (5, 5):
+  gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
+  gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(72, 84));
   gpath_move_to(s_hour_hand_path_ptr, GPoint(72, 84));
   gpath_move_to(s_minute_hand_path_ptr, GPoint(72, 84));
+
 }
 
 
@@ -978,6 +1029,9 @@ static void window_unload(Window *window) {
  // text_layer_destroy(s_temperature_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
+  gpath_destroy(s_hour_hand_path_bold_ptr);
+  gpath_destroy(s_minute_hand_path_bold_ptr);
+
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   health_service_events_unsubscribe();
