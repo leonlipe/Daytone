@@ -2,8 +2,10 @@
 #include "health.h"
 
 #define CONFIG_INVERTED 0
-#define CONFIG_CENTER_SECONDS_X 72
-#define CONFIG_CENTER_SECONDS_Y 120
+//#define CONFIG_CENTER_SECONDS_X 72
+//#define CONFIG_CENTER_SECONDS_Y 120
+#define SECONDS_CENTER_OFFSET_X 30 // 30
+#define SECONDS_CENTER_OFFSET_Y 36 // 36
 #define CONFIG_HAND_LENGTH_SEC 22
 #define CONFIG_RADIUS_SECS_CIRCLE 23
 #define CONFIG_HAND_LENGTH_HOUR 45
@@ -99,7 +101,7 @@ typedef struct {
 static unsigned int last_time_weather;
 
 static Window *s_main_window;
-static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer;
+static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer;
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer;
 static Layer *s_background_layer;
@@ -224,6 +226,50 @@ static GPoint make_hand_point(int quantity, int intervals, int len, GPoint cente
   };
 }
 
+static void change_layers(bool value){
+  layer_set_hidden(s_background_layer, value);
+    layer_set_hidden(s_battery_layer, value);
+    layer_set_hidden(s_health_layer, value);
+    layer_set_hidden(s_bg_layer, value);
+    layer_set_hidden(s_seconds_layer, value);
+    layer_set_hidden(text_layer_get_layer(s_12_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_01_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_02_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_03_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_04_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_05_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_06_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_07_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_08_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_09_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_10_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_11_hour_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_month_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_day_in_month_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_weekday_layer), value);
+
+}
+
+static void prv_unobstructed_will_change(GRect final_unobstructed_screen_area,
+void *context) {
+  // Get the full size of the screen
+  GRect full_bounds = layer_get_bounds(s_window_layer);
+  if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+    // Screen is about to become obstructed, hide the date
+    change_layers(true);
+  }
+}
+
+static void prv_unobstructed_did_change(void *context) {
+  // Get the full size of the screen
+  GRect full_bounds = layer_get_bounds(s_window_layer);
+  // Get the total available screen real-estate
+  GRect bounds = layer_get_unobstructed_bounds(s_window_layer);
+  if (grect_equal(&full_bounds, &bounds)) {
+    // Screen is no longer obstructed, show the date
+    change_layers(false);
+  }
+}
 
 /*
   Procedimiento que dibuja el circulo de Pebble Health
@@ -245,7 +291,13 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %d",health_steps_today );
 
   graphics_fill_radial(ctx, GRect(81, 27, 43, 43), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
-
+  GRect full_bounds = layer_get_bounds(s_window_layer);
+  GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
+  if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+      change_layers(true);
+  }else{
+    change_layers(false);
+  }
 
 }
 
@@ -267,27 +319,37 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
   } 
   if (DEBUG)
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %i", 36 * s_last_battery.charge_percent);
-
   graphics_fill_radial(ctx, GRect(21, 27, 43, 43), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
 
+//  graphics_fill_radial(ctx, GRect(24, 30, 37, 37), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
+  GRect full_bounds = layer_get_bounds(s_window_layer);
+  GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
+  if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+      change_layers(true);
+  }else{
+    change_layers(false);
+  }
 
 }
 /*
   Este procedimiento dibuja la parte de los segundos (background)
  */
 static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);  
+  GPoint center = grect_center_point(&unobstructed_bounds);
+  
    GPoint center_seconds = (GPoint) {
-    .x = (int16_t)CONFIG_CENTER_SECONDS_X,
-    .y = (int16_t)CONFIG_CENTER_SECONDS_Y,
+    .x = center.x,
+    .y = center.y+SECONDS_CENTER_OFFSET_Y,
   };
 
    GPoint center_info_left = (GPoint) {
-    .x = (int16_t)CONFIG_CENTER_INFOLEFT_X,
-    .y = (int16_t)CONFIG_CENTER_INFOLEFT_Y,
+    .x = center.x - SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
   };
    GPoint center_info_right = (GPoint) {
-    .x = (int16_t)CONFIG_CENTER_INFORIGHT_X,
-    .y = (int16_t)CONFIG_CENTER_INFORIGHT_Y,
+    .x = center.x + SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
   };
 
    
@@ -324,10 +386,11 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
 
       graphics_context_set_fill_color(ctx, CIRCLES_COLOR);
 
-    graphics_draw_rect(ctx, GRect(65, CONFIG_CENTER_SECONDS_Y+6, 14, 13));  
-    graphics_fill_rect(ctx, GRect(63, CONFIG_CENTER_SECONDS_Y+10, 18,5), 0, GCornersAll);  
-    graphics_fill_rect(ctx, GRect(69, CONFIG_CENTER_SECONDS_Y+5, 6,14), 0, GCornersAll);  
+    graphics_draw_rect(ctx, GRect(65, center_seconds.y+6, 14, 13));  
+    graphics_fill_rect(ctx, GRect(63, center_seconds.y+10, 18,5), 0, GCornersAll);  
+    graphics_fill_rect(ctx, GRect(69, center_seconds.y+5, 6,14), 0, GCornersAll);  
 
+    // Dibujar el circulo de los dias de la semana
 
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
@@ -340,7 +403,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
  */
 static void bg_update_proc(Layer *layer, GContext *ctx) {
  
-  GRect bounds = layer_get_bounds(layer);
+  GRect bounds = layer_get_bounds(layer);  
   GPoint center = grect_center_point(&bounds);
 
 
@@ -461,24 +524,26 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
 static void draw_proc(Layer *layer, GContext *ctx) {
 
     GRect bounds = layer_get_bounds(layer);
-    GPoint center = grect_center_point(&bounds);
+    GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);
+    GPoint center = grect_center_point(&unobstructed_bounds);
     GPoint center_seconds = (GPoint) {
-      .x = (int16_t)CONFIG_CENTER_SECONDS_X,
-      .y = (int16_t)CONFIG_CENTER_SECONDS_Y,
-    };
-    GPoint center_infoleft = (GPoint) {
-      .x = (int16_t)CONFIG_CENTER_INFOLEFT_X,
-      .y = (int16_t)CONFIG_CENTER_INFOLEFT_Y,
-    };
-    GPoint center_inforight = (GPoint) {
-      .x = (int16_t)CONFIG_CENTER_INFORIGHT_X,
-      .y = (int16_t)CONFIG_CENTER_INFORIGHT_Y,
+      .x = center.x,
+      .y = center.y+SECONDS_CENTER_OFFSET_Y,
     };
 
-    GPoint infoleft_hand_long = make_hand_point(s_last_time.wday+1, 7, CONFIG_HAND_LENGTH_SEC-3, center_infoleft);
-    GPoint infoleft_hand_inverted = make_hand_point(inverse_hand(s_last_time.wday+1), 7, 10, center_infoleft);
-    GPoint inforight_hand_long = make_hand_point(s_last_time.month+1, 12, CONFIG_HAND_LENGTH_SEC-3, center_inforight);
-    GPoint inforight_hand_inverted = make_hand_point(inverse_hand(s_last_time.month+1), 12, 10, center_inforight);
+     GPoint center_info_left = (GPoint) {
+      .x = center.x - SECONDS_CENTER_OFFSET_X,
+      .y = center.y - SECONDS_CENTER_OFFSET_Y,
+    };
+     GPoint center_info_right = (GPoint) {
+      .x = center.x + SECONDS_CENTER_OFFSET_X,
+      .y = center.y - SECONDS_CENTER_OFFSET_Y,
+    };
+
+    GPoint infoleft_hand_long = make_hand_point(s_last_time.wday, 7, CONFIG_HAND_LENGTH_SEC-3, center_info_left);
+    GPoint infoleft_hand_inverted = make_hand_point(inverse_hand(s_last_time.wday), 7, 10, center_info_left);
+    GPoint inforight_hand_long = make_hand_point(s_last_time.month, 12, CONFIG_HAND_LENGTH_SEC-3, center_info_right);
+    GPoint inforight_hand_inverted = make_hand_point(inverse_hand(s_last_time.month), 12, 10, center_info_right);
 
 
     Time now = s_last_time;
@@ -530,18 +595,18 @@ static void draw_proc(Layer *layer, GContext *ctx) {
      // INFO DEL DIA
       for(int y = 0; y < THICKNESS_SECONDS; y++) {
         for(int x = 0; x < THICKNESS_SECONDS; x++) {       
-          graphics_draw_line(ctx, GPoint(center_infoleft.x + x, center_infoleft.y+y ), GPoint(infoleft_hand_long.x + x, infoleft_hand_long.y+y ));
+          graphics_draw_line(ctx, GPoint(center_info_left.x + x, center_info_left.y+y ), GPoint(infoleft_hand_long.x + x, infoleft_hand_long.y+y ));
           if (CONFIG_INFOLEFT_HAND_INVERSED)
-          graphics_draw_line(ctx, GPoint(center_infoleft.x + x , center_infoleft.y+y ), GPoint(infoleft_hand_inverted.x+x, infoleft_hand_inverted.y+y ));
+          graphics_draw_line(ctx, GPoint(center_info_left.x + x , center_info_left.y+y ), GPoint(infoleft_hand_inverted.x+x, infoleft_hand_inverted.y+y ));
         }
       }      
 
       // INFO DEL MES
       for(int y = 0; y < THICKNESS_SECONDS; y++) {
         for(int x = 0; x < THICKNESS_SECONDS; x++) {       
-          graphics_draw_line(ctx, GPoint(center_inforight.x + x, center_inforight.y+y ), GPoint(inforight_hand_long.x + x, inforight_hand_long.y+y ));
+          graphics_draw_line(ctx, GPoint(center_info_right.x + x, center_info_right.y+y ), GPoint(inforight_hand_long.x + x, inforight_hand_long.y+y ));
           if (CONFIG_INFORIGHT_HAND_INVERSED)
-            graphics_draw_line(ctx, GPoint(center_inforight.x + x , center_inforight.y+y ), GPoint(inforight_hand_inverted.x+x, inforight_hand_inverted.y+y ));
+            graphics_draw_line(ctx, GPoint(center_info_right.x + x , center_info_right.y+y ), GPoint(inforight_hand_inverted.x+x, inforight_hand_inverted.y+y ));
         }
       }     
 
@@ -562,8 +627,8 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     #endif
 
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 2);
-    graphics_fill_circle(ctx, GPoint(center_infoleft.x , center_infoleft.y ), 2);
-    graphics_fill_circle(ctx, GPoint(center_inforight.x , center_inforight.y ), 2);
+    graphics_fill_circle(ctx, GPoint(center_info_left.x , center_info_left.y ), 2);
+    graphics_fill_circle(ctx, GPoint(center_info_right.x , center_info_right.y ), 2);
     
      #if defined(PBL_COLOR)
       graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -578,8 +643,8 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       }
     #endif
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
-    graphics_fill_circle(ctx, GPoint(center_infoleft.x , center_infoleft.y ), 1);
-    graphics_fill_circle(ctx, GPoint(center_inforight.x , center_inforight.y ), 1);
+    graphics_fill_circle(ctx, GPoint(center_info_left.x , center_info_left.y ), 1);
+    graphics_fill_circle(ctx, GPoint(center_info_right.x , center_info_right.y ), 1);
 
 
 
@@ -589,17 +654,17 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     // Move paths depends on the minutes or hours
     if (s_last_time.minutes == 0 ||  s_last_time.minutes == 15 || s_last_time.minutes == 30 || s_last_time.minutes == 45){
       gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(200, 200));
-      gpath_move_to(s_minute_hand_path_ptr, GPoint(72, 84));
+      gpath_move_to(s_minute_hand_path_ptr, center);
       if(s_last_time.minutes == 0){
         gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(200, 200));
-        gpath_move_to(s_hour_hand_path_ptr, GPoint(72, 84));
+        gpath_move_to(s_hour_hand_path_ptr, center);
       }else{
-        gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
+        gpath_move_to(s_hour_hand_path_bold_ptr, center);
         gpath_move_to(s_hour_hand_path_ptr, GPoint(200, 200));
       }
     }else{
-      gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
-      gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(72, 84));
+      gpath_move_to(s_hour_hand_path_bold_ptr, center);
+      gpath_move_to(s_minute_hand_path_bold_ptr, center);
       gpath_move_to(s_hour_hand_path_ptr, GPoint(200, 200));
       gpath_move_to(s_minute_hand_path_ptr, GPoint(200, 200));
     }
@@ -721,7 +786,12 @@ static void draw_proc(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, GPoint(center.x + CENTER_HANDS_OFFSET, center.y + CENTER_HANDS_OFFSET ), 1);
 
   
-
+  
+  if (!grect_equal(&bounds, &unobstructed_bounds)) {
+      change_layers(true);
+  }else{
+    change_layers(false);
+  }
 
 
 }
@@ -770,7 +840,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
   strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ?"%H:%M" : "%I:%M", tick_time);
   text_layer_set_text(s_digital_time_layer, s_buffer);
   layer_mark_dirty(s_canvas_layer);
-  layer_mark_dirty(s_health_layer);
 
   unsigned int now = mktime(tick_time);
   if (now > last_time_weather + SECONDS_FOR_POLL ){
@@ -786,7 +855,35 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
 
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
+  s_window_layer = window_layer;
+
+   UnobstructedAreaHandlers handlers = {
+    .will_change = prv_unobstructed_will_change,
+    .did_change = prv_unobstructed_did_change
+  };
+  unobstructed_area_service_subscribe(handlers, NULL);
+
+
   GRect bounds = layer_get_bounds(window_layer);
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(window_layer);
+  
+  GPoint center = grect_center_point(&unobstructed_bounds);
+  GPoint center_normal = grect_center_point(&bounds);
+
+  GPoint center_seconds = (GPoint) {
+    .x = center.x,
+    .y = center.y+SECONDS_CENTER_OFFSET_Y,
+  };
+
+   GPoint center_info_left = (GPoint) {
+    .x = center.x - SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
+  };
+   GPoint center_info_right = (GPoint) {
+    .x = center.x + SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
+  };
+
   // Create Background Layer
   s_bg_layer = layer_create(bounds);
   layer_set_update_proc(s_bg_layer, bg_update_proc);
@@ -799,7 +896,7 @@ static void window_load(Window *window) {
 
 
  // DIA DEL MES
-  s_day_in_month_layer = text_layer_create(GRect(50, CONFIG_CENTER_SECONDS_Y+3, 44, 40));
+  s_day_in_month_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
   text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_day_in_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   if (CONFIG_INVERTED){
@@ -951,7 +1048,7 @@ static void window_load(Window *window) {
 
 
 // TODO: Change sizes
-  s_background_layer = layer_create(GRect(0, 0, 144, 168));
+  s_background_layer = layer_create(bounds);
  // bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
  // bitmap_layer_set_compositing_mode(s_background_layer, GCompOpSet);
 
@@ -995,10 +1092,10 @@ static void window_load(Window *window) {
    s_minute_hand_path_ptr = gpath_create(&MINUTE_HAND_PATH);
   
   // Translate by (5, 5):
-  gpath_move_to(s_hour_hand_path_bold_ptr, GPoint(72, 84));
-  gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(72, 84));
-  gpath_move_to(s_hour_hand_path_ptr, GPoint(72, 84));
-  gpath_move_to(s_minute_hand_path_ptr, GPoint(72, 84));
+  gpath_move_to(s_hour_hand_path_bold_ptr, center);
+  gpath_move_to(s_minute_hand_path_bold_ptr, center);
+  gpath_move_to(s_hour_hand_path_ptr, center);
+  gpath_move_to(s_minute_hand_path_ptr, center);
 
 }
 
@@ -1084,12 +1181,63 @@ static void outbox_failed_callback(DictionaryIterator *iter,
     APP_LOG(APP_LOG_LEVEL_ERROR, "Message send failed. Reason: %d", (int)reason);
 }
 
+
+static void health_handler(HealthEventType event, void *context) {
+  // Which type of event occurred?
+  switch(event) {
+    case HealthEventSignificantUpdate:    
+      update_health_data();
+      layer_mark_dirty(s_health_layer);
+      if(DEBUG)
+        APP_LOG(APP_LOG_LEVEL_INFO, 
+              "New HealthService HealthEventSignificantUpdate event");
+      break;
+    case HealthEventMovementUpdate:
+      update_health_data();
+      layer_mark_dirty(s_health_layer);
+      if(DEBUG)
+        APP_LOG(APP_LOG_LEVEL_INFO, 
+              "New HealthService HealthEventMovementUpdate event");
+      break;
+    case HealthEventSleepUpdate:
+      if(DEBUG)
+        APP_LOG(APP_LOG_LEVEL_INFO, 
+              "New HealthService HealthEventSleepUpdate event");
+      break;
+      case HealthEventMetricAlert:
+      if(DEBUG)
+        APP_LOG(APP_LOG_LEVEL_INFO, 
+              "New HealthService HealthEventMetricAlert event");
+      break;
+    case HealthEventHeartRateUpdate:
+      if(DEBUG)
+        APP_LOG(APP_LOG_LEVEL_INFO,
+              "New HealthService HealthEventHeartRateUpdate event");
+      break;
+  }
+}
+
+void health_init() {
+    #if defined(PBL_HEALTH)
+    // Attempt to subscribe 
+    if(!health_service_events_subscribe(health_handler, NULL)) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
+    }
+    #else
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
+    #endif
+      
+}
+
+
 static void init() {
   tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
   battery_state_service_subscribe(handle_battery);
   // Inicializa el servicio de Salud
   health_init();
 
+
+  
   s_main_window = window_create();
  // s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
 
@@ -1121,6 +1269,8 @@ static void init() {
 
    
 }
+
+
 
 static void deinit() {
    window_destroy(s_main_window);
