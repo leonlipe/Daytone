@@ -1,0 +1,90 @@
+[
+  { 
+    "type": "heading", 
+    "defaultValue": "Analogy II" 
+  }, 
+  { 
+    "type": "text", 
+    "defaultValue": "Configuration Page" 
+  },
+  {
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
+      "defaultValue": "Watch configuration"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableSeconds",
+      "label": "Enable seconds"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableBattery",
+      "label": "Enable battery status"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableConnection",
+      "label": "Enable connection status"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableInfoLeft",
+      "label": "Enable left infocircle"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableInfoRight",
+      "label": "Enable right infocircle"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableHourMarks",
+      "label": "Enable hour markers"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableMinutesMarks",
+      "label": "Enable minutes markers"
+    }
+
+
+  ]
+  },
+  {
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
+      "defaultValue": "Health configuration"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableHealth",
+      "label": "Enable health"
+    }
+  ]
+  },
+  {
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
+      "defaultValue": "Color configuration"
+    },
+    {
+      "type": "color",
+      "messageKey": "backColor",
+      "defaultValue": "000000",
+      "label": "Background Color",
+      "sunlight": true      
+    }
+  ]
+  },
+  {
+  "type": "submit",
+  "defaultValue": "Save"
+}
+]

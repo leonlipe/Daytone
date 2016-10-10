@@ -2,10 +2,16 @@
   "name": "analogyii",
   "author": "Leon Felipe",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
-  "dependencies": {},
-  "capabilities": [ "health" ],
+  "dependencies": {
+    "pebble-clay": "^1.0.2"
+  },
+  "capabilities": [
+    "health",  "configurable"
+  ],
   "pebble": {
     "displayName": "Analogy II",
     "uuid": "54be73a4-1a8f-4d56-93db-a75deaa88c86",
@@ -19,16 +25,19 @@
     "watchapp": {
       "watchface": true
     },
-    "messageKeys": [
-      "dummy"
+    "messageKeys": [      
+      "enableHourMarks",
+      "enableMinutesMarks",
+      "enableSeconds",
+      "enableBattery",
+      "enableConnection",
+      "enableHealth",
+      "enableInfoLeft",
+      "enableInfoRight",
+      "enableHealth"
     ],
     "resources": {
-      "media": [        
-      ]
-    },
-    "messageKeys": {
-    "WEATHER_TEMPERATURE_KEY": 1,
-    "WEATHER_TEMPERATURE_FORE_KEY": 2
+      "media": []
     }
   }
 }

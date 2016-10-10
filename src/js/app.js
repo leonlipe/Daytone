@@ -1,3 +1,13 @@
+/**
+ * Clay config
+ * 
+ */
+
+var Clay = require('pebble-clay');
+var clayConfig = require('./config.json');
+var clay = new Clay(clayConfig);
+
+
 function fetchWeather(latitude, longitude) {
   console.log("Obten temperatura");
   var req = new XMLHttpRequest();
