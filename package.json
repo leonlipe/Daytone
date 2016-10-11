@@ -18,9 +18,8 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "aplite",
-      "basalt",
-      "chalk"
+      
+      "basalt"
     ],
     "watchapp": {
       "watchface": true
@@ -34,7 +33,21 @@
       "enableHealth",
       "enableInfoLeft",
       "enableInfoRight",
-      "enableHealth"
+      "enableHealth",
+      "backgroundcolor",
+      "hourHandsColor",
+      "minuteHandsColor",
+      "smallHandsColor",
+      "hourMarkersColor",
+      "minuteMarkersColor",
+      "numbersColor",
+      "batteryCircleColor",
+      "healthCircleColor",
+      "infoCirclesColor",
+      "infoCircleLeftBackColor",
+      "infoCircleRightBackColor",
+      "secondsBackColor",
+      "dayInMonthcolor"
     ],
     "resources": {
       "media": []

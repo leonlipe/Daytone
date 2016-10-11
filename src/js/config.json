@@ -76,11 +76,103 @@
     },
     {
       "type": "color",
-      "messageKey": "backColor",
+      "messageKey": "backgroundcolor",
       "defaultValue": "000000",
       "label": "Background Color",
       "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "hourHandsColor",
+      "defaultValue": "AAAAAA",
+      "label": "Hour Hands Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "minuteHandsColor",
+      "defaultValue": "FFFFFF",
+      "label": "Minute Hands Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "smallHandsColor",
+      "defaultValue": "00AAFF",
+      "label": "Small hands Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "hourMarkersColor",
+      "defaultValue": "FFFFFF",
+      "label": "Hour markers Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "minuteMarkersColor",
+      "defaultValue": "FFFFFF",
+      "label": "Minute markers Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "numbersColor",
+      "defaultValue": "AAAAAA",
+      "label": "Numbers Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "batteryCircleColor",
+      "defaultValue": "00AAFF",
+      "label": "Battery indicator Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "healthCircleColor",
+      "defaultValue": "00AAFF",
+      "label": "Health indicator Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "infoCirclesColor",
+      "defaultValue": "FFFFFF",
+      "label": "Information circles & seconds circle outline Color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "int infoCircleLeftBackColor",
+      "defaultValue": "000000",
+      "label": "Left information circle background color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "infoCircleRightBackColor",
+      "defaultValue": "000000",
+      "label": "Right information circle background color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "secondsBackColor",
+      "defaultValue": "000000",
+      "label": "Seconds background color",
+      "sunlight": true      
+    },
+    {
+      "type": "color",
+      "messageKey": "dayInMonthcolor",
+      "defaultValue": "AAAAAA",
+      "label": "Day of the month color",
+      "sunlight": true      
     }
+
   ]
   },
   {
