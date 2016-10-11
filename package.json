@@ -44,8 +44,8 @@
       "batteryCircleColor",
       "healthCircleColor",
       "infoCirclesColor",
-      "infoCircleLeftBackColor",
-      "infoCircleRightBackColor",
+      "infoLeftBackColor",
+      "infoRightBackColor",
       "secondsBackColor",
       "dayInMonthcolor"
     ],

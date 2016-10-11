@@ -146,14 +146,14 @@
     },
     {
       "type": "color",
-      "messageKey": "int infoCircleLeftBackColor",
+      "messageKey": "infoLeftBackColor",
       "defaultValue": "000000",
       "label": "Left information circle background color",
       "sunlight": true      
     },
     {
       "type": "color",
-      "messageKey": "infoCircleRightBackColor",
+      "messageKey": "infoRightBackColor",
       "defaultValue": "000000",
       "label": "Right information circle background color",
       "sunlight": true      

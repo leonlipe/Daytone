@@ -71,7 +71,7 @@
 #define CONFIG_INFOLEFT_HAND_INVERSED false
 #define CONFIG_INFORIGHT_HAND_INVERSED false
 
-#define DEBUG false
+#define DEBUG true
 
 
 #define HOUR_MARKERS_COLOR GColorLightGray
@@ -185,8 +185,8 @@ typedef struct {
  int batteryCircleColor;
  int healthCircleColor;
  int infoCirclesColor;
- int infoCircleLeftBackColor;
- int infoCircleRightBackColor;
+ int infoLeftBackColor;
+ int infoRightBackColor;
  int secondsBackColor;
  int dayInMonthcolor;
 
@@ -270,18 +270,18 @@ static int32_t getMarkSizeForMinutes(int m){
 }
 
 static void refreshAllLayers(){
-  text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_01_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_02_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_03_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_04_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_05_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_06_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_07_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_08_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_09_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_10_hour_layer, GColorFromHEX(config.hourMarkersColor));
-  text_layer_set_text_color(s_11_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_01_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_02_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_03_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_04_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_05_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_06_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_07_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_08_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_09_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_10_hour_layer, GColorFromHEX(config.numbersColor));
+  text_layer_set_text_color(s_11_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_text_color(s_day_in_month_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_text_color(s_month_layer, GColorFromHEX(config.infoCirclesColor)); 
   text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.infoCirclesColor)); 
@@ -392,7 +392,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
 
     
       if (DEBUG)
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %d",health_steps_today );
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Health Val: %d",health_steps_today );
 
       graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
     }else{
@@ -428,7 +428,7 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
 
   // } 
   if (DEBUG)
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %i", 36 * s_last_battery.charge_percent);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Battery Val: %i", 36 * s_last_battery.charge_percent);
   graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
   }else{
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
@@ -447,7 +447,7 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
 /*
   Este procedimiento dibuja la parte de los segundos (background)
  */
-static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
+static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {  
   GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);  
   GPoint center = grect_center_point(&unobstructed_bounds);
   
@@ -467,21 +467,21 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
 
    
     
-    if (config.enableSeconds){
-      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
-      graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
-      graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
-      graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
-      graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE-1);
-      graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
-     
-    }
+      if (config.enableSeconds){
+        graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+        graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
+        graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE-1);
+        graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+       
+      }
 
      if (config.enableInfoLeft){
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
         graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE+3);
-        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoLeftBackColor));
         graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE-1);
         graphics_draw_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE);
       }
@@ -489,7 +489,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
         graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE+3);
-        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleRightBackColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoRightBackColor));
         graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE-1);
         graphics_draw_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE);
       }
@@ -524,7 +524,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
     }
 
 
-    if (config.enableInfoLeft){
+    if (config.enableInfoRight){
      for(int h = 0; h < 12; h++) { 
 
 
@@ -780,17 +780,19 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     }
      
 
+   if (config.enableSeconds){
     graphics_context_set_stroke_color(ctx, GColorFromHEX(config.secondsBackColor));
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));    
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
+   }
    if (config.enableInfoLeft){
-      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));
-      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));    
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoLeftBackColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoLeftBackColor));    
       graphics_fill_circle(ctx, GPoint(center_info_left.x , center_info_left.y ), 1);
     }
     if(config.enableInfoRight){
-      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCircleRightBackColor));
-      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleRightBackColor));    
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoRightBackColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoRightBackColor));    
       graphics_fill_circle(ctx, GPoint(center_info_right.x , center_info_right.y ), 1);
     }
 
@@ -1073,84 +1075,84 @@ static void window_load(Window *window) {
   s_12_hour_layer = text_layer_create(GRect(XPOS_12H, YPOS_12H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_12_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_12_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_12_hour_layer, GColorClear);
   text_layer_set_text(s_12_hour_layer, "12");  
 
   s_01_hour_layer = text_layer_create(GRect(XPOS_01H, YPOS_01H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_01_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_01_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_01_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_01_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_01_hour_layer, GColorClear);
   text_layer_set_text(s_01_hour_layer, "1");  
 
   s_02_hour_layer = text_layer_create(GRect(XPOS_02H, YPOS_02H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_02_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_02_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_02_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_02_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_02_hour_layer, GColorClear);
   text_layer_set_text(s_02_hour_layer, "2");  
 
   s_03_hour_layer = text_layer_create(GRect(XPOS_03H, YPOS_03H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_03_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_03_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_03_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_03_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_03_hour_layer, GColorClear);
   text_layer_set_text(s_03_hour_layer, "3");  
 
   s_04_hour_layer = text_layer_create(GRect(XPOS_04H, YPOS_04H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_04_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_04_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_04_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_04_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_04_hour_layer, GColorClear);
   text_layer_set_text(s_04_hour_layer, "4");  
 
   s_05_hour_layer = text_layer_create(GRect(XPOS_05H, YPOS_05H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_05_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_05_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_05_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_05_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_05_hour_layer, GColorClear);
   text_layer_set_text(s_05_hour_layer, "5");  
 
   s_06_hour_layer = text_layer_create(GRect(XPOS_06H, YPOS_06H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_06_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_06_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_06_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_06_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_06_hour_layer, GColorClear);
   text_layer_set_text(s_06_hour_layer, "6");  
 
   s_07_hour_layer = text_layer_create(GRect(XPOS_07H, YPOS_07H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_07_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_07_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_07_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_07_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_07_hour_layer, GColorClear);
   text_layer_set_text(s_07_hour_layer, "7");  
 
   s_08_hour_layer = text_layer_create(GRect(XPOS_08H, YPOS_08H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_08_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_08_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_08_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_08_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_08_hour_layer, GColorClear);
   text_layer_set_text(s_08_hour_layer, "8");  
 
   s_09_hour_layer = text_layer_create(GRect(XPOS_09H, YPOS_09H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_09_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_09_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_09_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_09_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_09_hour_layer, GColorClear);
   text_layer_set_text(s_09_hour_layer, "9");  
 
   s_10_hour_layer = text_layer_create(GRect(XPOS_10H, YPOS_10H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_10_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_10_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_10_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_10_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_10_hour_layer, GColorClear);
   text_layer_set_text(s_10_hour_layer, "10");  
 
   s_11_hour_layer = text_layer_create(GRect(XPOS_11H, YPOS_11H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_11_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_11_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
-  text_layer_set_text_color(s_11_hour_layer, GColorFromHEX(config.hourMarkersColor));
+  text_layer_set_text_color(s_11_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_11_hour_layer, GColorClear);
   text_layer_set_text(s_11_hour_layer, "11");  
 
@@ -1439,15 +1441,15 @@ static void read_configuration(){
     config.infoCirclesColor = 16777215;
   }
 
-  if (persist_exists(MESSAGE_KEY_infoCircleLeftBackColor)){
-    config.infoCircleLeftBackColor = persist_read_int(MESSAGE_KEY_infoCircleLeftBackColor);
+  if (persist_exists(MESSAGE_KEY_infoLeftBackColor)){
+    config.infoLeftBackColor = persist_read_int(MESSAGE_KEY_infoLeftBackColor);
   }else{
-    config.infoCircleLeftBackColor = 0;
+    config.infoLeftBackColor = 0;
   }
-  if (persist_exists(MESSAGE_KEY_infoCircleRightBackColor)){
-    config.infoCircleRightBackColor = persist_read_int(MESSAGE_KEY_infoCircleRightBackColor);
+  if (persist_exists(MESSAGE_KEY_infoRightBackColor)){
+    config.infoRightBackColor = persist_read_int(MESSAGE_KEY_infoRightBackColor);
   }else{
-    config.infoCircleRightBackColor = 0;
+    config.infoRightBackColor = 0;
   }
   if (persist_exists(MESSAGE_KEY_secondsBackColor)){
     config.secondsBackColor = persist_read_int(MESSAGE_KEY_secondsBackColor);
@@ -1495,7 +1497,10 @@ static void read_configuration(){
     connection_service_unsubscribe();
    }
 
-
+   if(DEBUG){
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "infoRightBackColor: %d",config.infoRightBackColor);
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "infoLeftBackColor: %d",config.infoLeftBackColor);
+   }
 
 }
 
@@ -1594,13 +1599,13 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   if(configOption){
     persist_write_int(MESSAGE_KEY_infoCirclesColor,configOption->value->int32);
   }
-  configOption = dict_find(iter, MESSAGE_KEY_infoCircleLeftBackColor);
+  configOption = dict_find(iter, MESSAGE_KEY_infoLeftBackColor);
   if(configOption){
-    persist_write_int(MESSAGE_KEY_infoCircleLeftBackColor,configOption->value->int32);
+    persist_write_int(MESSAGE_KEY_infoLeftBackColor,configOption->value->int32);
   }
-  configOption = dict_find(iter, MESSAGE_KEY_infoCircleLeftBackColor);
+  configOption = dict_find(iter, MESSAGE_KEY_infoRightBackColor);
   if(configOption){
-    persist_write_int(MESSAGE_KEY_infoCircleLeftBackColor,configOption->value->int32);
+    persist_write_int(MESSAGE_KEY_infoRightBackColor,configOption->value->int32);
   }
   configOption = dict_find(iter, MESSAGE_KEY_secondsBackColor);
   if(configOption){
