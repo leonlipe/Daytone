@@ -89,6 +89,9 @@
 #define SUBSCRIBE_TO_HEALTH true
 #define SHOWINFOCIRCLES true
 
+
+static GFont s_connection_icons_14;
+
 // Message sizes
 const uint32_t inbox_size = 64;
 const uint32_t outbox_size = 256;
@@ -113,7 +116,7 @@ static unsigned int last_time_weather;
 static Window *s_main_window;
 static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer;
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
-static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer;
+static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer, *s_connection_layer;
 static Layer *s_background_layer;
 //static GBitmap *s_background_bitmap;
 
@@ -124,23 +127,38 @@ static char s_weekday_buffer[8], s_month_buffer[8], s_day_in_month_buffer[3];
 static int s_weekday_number;
 
 static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hour_hand_path_bold_ptr = NULL, *s_minute_hand_path_bold_ptr = NULL;
+
 static const GPathInfo MINUTE_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, {-3, CONFIG_HAND_LENGTH_MIN*-1}, {3, CONFIG_HAND_LENGTH_MIN*-1}, {3, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) { {-3, PATH_HANDS_INVERSE_LEGTH}, 
+                          {-3, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {3, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {3, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, {-3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, CONFIG_HAND_LENGTH_HOUR*-1}, {3, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, 
+                          {-3, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {3, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {3, PATH_HANDS_INVERSE_LEGTH}}
 };
 
 static const GPathInfo MINUTE_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, {-4, CONFIG_HAND_LENGTH_MIN*-1}, {4, CONFIG_HAND_LENGTH_MIN*-1}, {4, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, 
+                          {-4, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {4, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {4, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, {-4, CONFIG_HAND_LENGTH_HOUR*-1}, {4, CONFIG_HAND_LENGTH_HOUR*-1}, {4, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, 
+                          {-4, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {4, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {4, PATH_HANDS_INVERSE_LEGTH}}
 };
+
+
 
 typedef struct {
   int charge_percent;
@@ -156,7 +174,7 @@ typedef struct {
  bool enableInfoRight;
  bool enableMinutesMarks;
  bool enableHourMarks;
-
+ bool enableConnection;
  int backgroundcolor;
  int hourHandsColor;
  int minuteHandsColor;
@@ -291,6 +309,25 @@ static GPoint make_hand_point(int quantity, int intervals, int len, GPoint cente
   };
 }
 
+/**
+ * Funcion que maneja el estado de la conexion o desconexion del reloj
+ * @param connected Si esta conectado o no
+ */
+static void app_connection_handler(bool connected) {  
+  if(DEBUG)
+    APP_LOG(APP_LOG_LEVEL_INFO, "Pebble app %sconnected", connected ? "" : "dis");
+  if (connected){
+    text_layer_set_text(s_connection_layer, "");    
+  }else{
+    text_layer_set_text(s_connection_layer, "ha");
+  }
+}
+
+static void kit_connection_handler(bool connected) {
+  if(DEBUG)
+    APP_LOG(APP_LOG_LEVEL_INFO, "PebbleKit %sconnected", connected ? "" : "dis"); 
+}
+
 static void change_layers(bool value){
     layer_set_hidden(s_background_layer, value);
     layer_set_hidden(s_battery_layer, value);
@@ -312,6 +349,7 @@ static void change_layers(bool value){
     layer_set_hidden(text_layer_get_layer(s_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_day_in_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weekday_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_connection_layer), value);
 
 }
 
@@ -344,7 +382,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
  
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
-  if (config.enableHealth){
+  if (config.enableHealth && config.enableInfoRight){
     int health_steps_today = health_get_steps_today();
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.healthCircleColor));
     int steps_goal_percent = 10;
@@ -380,15 +418,15 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
  
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
-  if (config.enableBattery){
-  if(s_last_battery.charge_percent >= 30){
-    graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));
-  }else if(s_last_battery.charge_percent < 30 && s_last_battery.charge_percent >= 20){
-    graphics_context_set_fill_color(ctx, GColorYellow);
-  }else{
-     graphics_context_set_fill_color(ctx, GColorRed);
+  if (config.enableBattery && config.enableInfoLeft){
+  //if(s_last_battery.charge_percent >= 30){
+  graphics_context_set_fill_color(ctx, GColorFromHEX(config.batteryCircleColor));
+  // }else if(s_last_battery.charge_percent < 30 && s_last_battery.charge_percent >= 20){
+  //   graphics_context_set_fill_color(ctx, GColorYellow);
+  // }else{
+  //    graphics_context_set_fill_color(ctx, GColorRed);
 
-  } 
+  // } 
   if (DEBUG)
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Val: %i", 36 * s_last_battery.charge_percent);
   graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
@@ -476,9 +514,11 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
             graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
             graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCirclesColor));
                     
-                  
-            graphics_draw_line(ctx, GPoint(point.x , point.y ), GPoint(point02.x, point02.y));
-          
+          for(int y = 0; y < 1; y++) {
+            for(int x = 0; x < 1; x++) {          
+              graphics_draw_line(ctx, GPoint(point.x , point.y ), GPoint(point02.x+x, point02.y+y));
+            }
+          }
       
     }
     }
@@ -502,8 +542,11 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
             graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
             graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCirclesColor));
                     
-                  
-            graphics_draw_line(ctx, GPoint(point.x , point.y ), GPoint(point02.x, point02.y));
+            for(int y = 0; y < 1; y++) {
+              for(int x = 0; x < 1; x++) {       
+                graphics_draw_line(ctx, GPoint(point.x +x, point.y +x), GPoint(point02.x+x, point02.y+x));
+              }
+            }
           
       
     }
@@ -526,8 +569,11 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
               graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
               graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCirclesColor));
                       
-                    
-              graphics_draw_line(ctx, GPoint(point.x , point.y ), GPoint(point02.x, point02.y));
+            for(int y = 0; y < THICKNESS_SECONDS; y++) {
+              for(int x = 0; x < THICKNESS_SECONDS; x++) {       
+                graphics_draw_line(ctx, GPoint(point.x +x, point.y +y), GPoint(point02.x+x, point02.y+y));
+              }
+            }
             }
         
       }
@@ -734,13 +780,17 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     }
      
 
-    graphics_context_set_stroke_color(ctx, GColorFromHEX(config.backgroundcolor));
-    graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));    
+    graphics_context_set_stroke_color(ctx, GColorFromHEX(config.secondsBackColor));
+    graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));    
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
    if (config.enableInfoLeft){
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleLeftBackColor));    
       graphics_fill_circle(ctx, GPoint(center_info_left.x , center_info_left.y ), 1);
     }
     if(config.enableInfoRight){
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCircleRightBackColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCircleRightBackColor));    
       graphics_fill_circle(ctx, GPoint(center_info_right.x , center_info_right.y ), 1);
     }
 
@@ -775,7 +825,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.hourHandsColor));
     gpath_draw_filled(ctx, s_hour_hand_path_ptr);
     gpath_draw_filled(ctx, s_hour_hand_path_bold_ptr);
-    graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));    
+    graphics_context_set_stroke_color(ctx, GColorFromHEX(config.backgroundcolor));    
     gpath_draw_outline(ctx, s_hour_hand_path_ptr);  
     gpath_draw_outline(ctx, s_hour_hand_path_bold_ptr);  
   
@@ -783,7 +833,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.minuteHandsColor));
     gpath_draw_filled(ctx, s_minute_hand_path_ptr);
     gpath_draw_filled(ctx, s_minute_hand_path_bold_ptr);
-    graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));    
+    graphics_context_set_stroke_color(ctx, GColorFromHEX(config.backgroundcolor));    
     gpath_draw_outline(ctx, s_minute_hand_path_ptr);  
     gpath_draw_outline(ctx, s_minute_hand_path_bold_ptr);  
 
@@ -935,6 +985,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
 }
 
 static void window_load(Window *window) {
+  s_connection_icons_14 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CONNECTION_ICONS_14));
+
   window_set_background_color(s_main_window, GColorFromHEX(config.backgroundcolor));
 
   Layer *window_layer = window_get_root_layer(window);
@@ -1104,6 +1156,12 @@ static void window_load(Window *window) {
 
 
 
+  s_connection_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-17, 44, 40));
+  text_layer_set_text_alignment(s_connection_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_connection_layer, s_connection_icons_14);
+  text_layer_set_text_color(s_connection_layer, GColorFromHEX(config.dayInMonthcolor));
+  text_layer_set_background_color(s_connection_layer, GColorClear);
+  text_layer_set_text(s_connection_layer, "");
 
   
 
@@ -1155,6 +1213,8 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
   layer_add_child(window_layer, s_battery_layer);
   layer_add_child(window_layer, s_health_layer);
+  layer_add_child(window_layer, text_layer_get_layer(s_connection_layer));
+
 
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
   //layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
@@ -1198,6 +1258,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_seconds_layer);
   layer_destroy(s_battery_layer);
   layer_destroy(s_health_layer);
+  text_layer_destroy(s_connection_layer);
  // text_layer_destroy(s_temperature_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
@@ -1209,6 +1270,9 @@ static void window_unload(Window *window) {
     battery_state_service_unsubscribe();
   if (config.enableHealth)
     health_service_events_unsubscribe();
+
+
+  connection_service_unsubscribe();
 
  
 
@@ -1306,6 +1370,13 @@ static void read_configuration(){
     config.enableMinutesMarks = true;
   }
 
+   if (persist_exists(MESSAGE_KEY_enableConnection)){
+    config.enableConnection = persist_read_bool(MESSAGE_KEY_enableConnection);
+  }else{
+    config.enableConnection = false;
+  }
+
+
   if (persist_exists(MESSAGE_KEY_backgroundcolor)){
     config.backgroundcolor = persist_read_int(MESSAGE_KEY_backgroundcolor);
   }else{
@@ -1393,7 +1464,9 @@ static void read_configuration(){
 
   // Dspues de leer, configurar adecuadamente las suscipciones
   tick_timer_service_subscribe(config.enableSeconds ? SECOND_UNIT : MINUTE_UNIT, tick_handler);
-  if (config.enableBattery){
+
+
+  if (config.enableBattery && config.enableInfoLeft){
     battery_state_service_subscribe(handle_battery);
     //layer_set_hidden(s_battery_layer, false);
 
@@ -1404,7 +1477,7 @@ static void read_configuration(){
 
  
   // Inicializa el servicio de Salud
-  if (config.enableHealth){
+  if (config.enableHealth && config.enableInfoRight){
     health_init();
     //layer_set_hidden(s_health_layer, true);
    }else{
@@ -1412,6 +1485,15 @@ static void read_configuration(){
     //layer_set_hidden(s_health_layer, false);
 
    } 
+
+   if(config.enableConnection){
+       connection_service_subscribe((ConnectionHandlers) {
+      .pebble_app_connection_handler = app_connection_handler,
+      .pebblekit_connection_handler = kit_connection_handler
+    });
+   }else{
+    connection_service_unsubscribe();
+   }
 
 
 
@@ -1468,6 +1550,9 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   configOption = dict_find(iter, MESSAGE_KEY_enableMinutesMarks);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableMinutesMarks,configOption->value->int32 == 1);
+  }
+  if(configOption){
+    persist_write_bool(MESSAGE_KEY_enableConnection,configOption->value->int32 == 1);
   }
   configOption = dict_find(iter, MESSAGE_KEY_backgroundcolor);
   if(configOption){
@@ -1548,7 +1633,10 @@ static void init() {
 
   //Aplite
   
-  
+  connection_service_subscribe((ConnectionHandlers) {
+    .pebble_app_connection_handler = app_connection_handler,
+    .pebblekit_connection_handler = kit_connection_handler
+  });
   
   window_set_window_handlers(s_main_window, (WindowHandlers) {
     .load = window_load,

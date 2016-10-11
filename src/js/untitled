@@ -1,0 +1,32 @@
+int backgroundcolor;
+int hourHandsColor;
+int minuteHandsColor;
+int smallHandsColor;
+int hourMarkersColor;
+int minuteMarkersColor;
+int numbersColor;
+int batteryCircleColor;
+int healthCircleColor;
+int infoCirclesColor;
+int infoCircleLeftBackColor;
+int infoCircleRightBackColor;
+int secondsBackColor;
+int dayInMonthcolor;
+
+
+MESSAGE_KEY_backgroundcolor;
+MESSAGE_KEY_hourHandsColor;
+MESSAGE_KEY_minuteHandsColor;
+MESSAGE_KEY_smallHandsColor;
+MESSAGE_KEY_hourMarkersColor;
+MESSAGE_KEY_minuteMarkersColor;
+MESSAGE_KEY_numbersColor;
+MESSAGE_KEY_batteryCircleColor;
+MESSAGE_KEY_healthCircleColor;
+MESSAGE_KEY_infoCirclesColor;
+MESSAGE_KEY_infoCircleLeftBackColor;
+MESSAGE_KEY_infoCircleRightBackColor;
+
+MESSAGE_KEY_secondsBackColor;
+MESSAGE_KEY_dayInMonthcolor;
+

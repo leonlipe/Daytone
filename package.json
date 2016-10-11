@@ -50,7 +50,13 @@
       "dayInMonthcolor"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type":"font",
+          "name":"FONT_CONNECTION_ICONS_14",
+          "file":"fonts/conn-icons.ttf"
+        } 
+      ]
     }
   }
 }
