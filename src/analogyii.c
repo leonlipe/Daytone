@@ -31,7 +31,7 @@
 #define CONFIG_RADIUS_INFORIGHT_CIRCLE 23
 
 #define MESSAGE_KEY_GET_WEATHER 1
-#define SECONDS_FOR_POLL 3600
+//#define SECONDS_FOR_POLL 3600
 
 #define WEATHER_TEMPERATURE_KEY 1
 #define WEATHER_TEMPERATURE_FORE_KEY 2
@@ -196,6 +196,8 @@ typedef struct {
  int dayInMonthcolor;
  int dailyStepsGoal;
  int weatherProvider;
+ int weatherUnits;
+ int weatherMinutes;
 
 } Configuration;
 
@@ -725,10 +727,10 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     if(config.enableSeconds){
        second_hand_long = make_hand_point(now.seconds, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
        second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 10, center_seconds);
-    }else{
+    }/*else{
        second_hand_long = make_hand_point(0, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
        second_hand_inverted = make_hand_point(inverse_hand(0), 60, 10, center_seconds);
-    }
+    }*/
     float minute_angle = TRIG_MAX_ANGLE * now.minutes / 60; //now.minutes
     float hour_angle = TRIG_MAX_ANGLE * now.hours / 12; //now.hours
     hour_angle += (minute_angle / TRIG_MAX_ANGLE) * (TRIG_MAX_ANGLE / 12);
@@ -739,7 +741,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
     
         // Dibujar los segundos
-        
+         if(config.enableSeconds){
           graphics_context_set_stroke_color(ctx, GColorFromHEX(config.smallHandsColor));
           graphics_context_set_fill_color(ctx, GColorFromHEX(config.smallHandsColor));
         
@@ -752,7 +754,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
               graphics_draw_line(ctx, GPoint(center_seconds.x + x , center_seconds.y+y ), GPoint(second_hand_inverted.x+x, second_hand_inverted.y+y ));
             }
           }
-
+        }
            // El centro de los segundos
           
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
@@ -937,78 +939,16 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 }
 
-
-static void get_weather(){
-  if (DEBUG)
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter Get Weather");
-
-  // Declare the dictionary's iterator
-  DictionaryIterator *out_iter;
-
-  // Prepare the outbox buffer for this message
-  AppMessageResult result = app_message_outbox_begin(&out_iter);
-  if(result == APP_MSG_OK) {
-    // Add an item to ask for weather data
-    int value = 0;
-    dict_write_int(out_iter, MESSAGE_KEY_GET_WEATHER, &value, sizeof(int), true);
-
-    // Send this message
-    result = app_message_outbox_send();
-    if(result != APP_MSG_OK) {
-      if (DEBUG)
-        APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int)result);
-    }
-  } else {
-    // The outbox cannot be used right now
-    if (DEBUG)
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing the outbox: %d", (int)result);
-  }
-
-}
-
-static void tick_handler(struct tm *tick_time, TimeUnits changed) {
-  
-  s_last_time.days = tick_time->tm_mday;
-  s_last_time.hours = tick_time->tm_hour;
-  s_last_time.minutes = tick_time->tm_min;
-  s_last_time.seconds = tick_time->tm_sec;
-  s_last_time.wday = tick_time->tm_wday;
-  s_last_time.month = tick_time->tm_mon;
-  if (config.enableInfoLeft)
-  strftime(s_weekday_buffer, sizeof(s_weekday_buffer), "%a", tick_time);
-  else
-    snprintf(s_weekday_buffer, sizeof(s_weekday_buffer), "%s", "  ");
-
-  snprintf(s_day_in_month_buffer, sizeof(s_day_in_month_buffer), "%d", s_last_time.days);
-  if(config.enableInfoRight)
-    strftime(s_month_buffer, sizeof(s_month_buffer), "%b", tick_time);  
-  else
-    snprintf(s_month_buffer, sizeof(s_month_buffer), "%s", "  ");  
-
-  static char s_buffer[8];
-  strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ?"%H:%M" : "%I:%M", tick_time);
-  text_layer_set_text(s_digital_time_layer, s_buffer);
-  layer_mark_dirty(s_canvas_layer);
-
-  unsigned int now = mktime(tick_time);
-  if (now > last_time_weather + SECONDS_FOR_POLL ){
-    if (DEBUG)
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Calling weather");
-    last_time_weather = mktime(tick_time);
-   // get_weather();
-  }
-  if (DEBUG)
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Time :%u", last_time_weather);
-
-}
-
 static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus status){
   switch(status) {
     case GenericWeatherStatusAvailable:
     {
+      if (config.weatherUnits == 0){
+        snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%dC",info->temp_c);
+      }else{
+        snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%dF",info->temp_f);
+      }
       
-      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%dC",info->temp_c);
-      //text_layer_set_text(s_text_layer, s_buffer);
       if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Generic weather fetch callback: %s",s_temp_buffer);
     }
@@ -1048,6 +988,60 @@ static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus stat
   
 
 }
+
+static void update_weather(unsigned int now){
+  if (DEBUG){
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Last time weather :%u", last_time_weather);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Last time :%u", now);
+  }
+  if (DEBUG)
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter update_weather, enableWeather:%d",config.enableWeather);  
+  if(config.enableWeather){
+      if (now > last_time_weather + (config.weatherMinutes * 60) ){
+        if (DEBUG)
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Calling weather");
+        last_time_weather = now;
+         generic_weather_fetch(weather_callback);
+      }
+
+     
+  }else{
+    snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","");
+  }
+}
+
+static void tick_handler(struct tm *tick_time, TimeUnits changed) {
+  
+  s_last_time.days = tick_time->tm_mday;
+  s_last_time.hours = tick_time->tm_hour;
+  s_last_time.minutes = tick_time->tm_min;
+  s_last_time.seconds = tick_time->tm_sec;
+  s_last_time.wday = tick_time->tm_wday;
+  s_last_time.month = tick_time->tm_mon;
+  if (config.enableInfoLeft)
+    strftime(s_weekday_buffer, sizeof(s_weekday_buffer), "%a", tick_time);
+  else
+    snprintf(s_weekday_buffer, sizeof(s_weekday_buffer), "%s", "");
+
+  snprintf(s_day_in_month_buffer, sizeof(s_day_in_month_buffer), "%d", s_last_time.days);
+  
+  if(config.enableInfoRight)
+    strftime(s_month_buffer, sizeof(s_month_buffer), "%b", tick_time);  
+  else
+    snprintf(s_month_buffer, sizeof(s_month_buffer), "%s", "");  
+
+  static char s_buffer[8];
+  //strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ?"%H:%M" : "%I:%M", tick_time);
+  //text_layer_set_text(s_digital_time_layer, s_buffer);
+  layer_mark_dirty(s_canvas_layer);
+
+  update_weather(mktime(tick_time));
+  
+  
+
+}
+
+
 
 static void window_load(Window *window) {
   
@@ -1230,7 +1224,7 @@ static void window_load(Window *window) {
   text_layer_set_text(s_connection_layer, "");
 
   
-  s_temperature_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-17, 44, 40));
+  s_temperature_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
   text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
   text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_temperature_layer, GColorFromHEX(config.infoCirclesColor));
@@ -1309,6 +1303,8 @@ static void window_load(Window *window) {
 
 
 static void window_unload(Window *window) {
+  persist_write_int(MESSAGE_KEY_lastTimeWeather,last_time_weather);
+  persist_write_string(MESSAGE_KEY_lastWeather, s_temp_buffer);
   layer_destroy(s_background_layer);
   layer_destroy(s_bg_layer);
   layer_destroy(s_canvas_layer);
@@ -1346,7 +1342,7 @@ static void window_unload(Window *window) {
 
 
   connection_service_unsubscribe();
-
+  generic_weather_deinit();
  
 
 }
@@ -1399,8 +1395,11 @@ void health_init() {
       
 }
 
-static void read_configuration(){
 
+
+static void read_configuration(){
+  if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter read_configuration");
   if (persist_exists(MESSAGE_KEY_enableSeconds)){
     config.enableSeconds = persist_read_bool(MESSAGE_KEY_enableSeconds);
   }else{
@@ -1539,10 +1538,44 @@ static void read_configuration(){
     config.dayInMonthcolor = 11184810;
   }
 
-   if (persist_exists(MESSAGE_KEY_dailyStepsGoal)){
+  if (persist_exists(MESSAGE_KEY_dailyStepsGoal)){
     config.dailyStepsGoal = persist_read_int(MESSAGE_KEY_dailyStepsGoal);
   }else{
     config.dailyStepsGoal = 10000;
+  }
+
+  if (persist_exists(MESSAGE_KEY_weatherProvider)){
+    config.weatherProvider = persist_read_int(MESSAGE_KEY_weatherProvider);
+  }else{
+    config.weatherProvider = 0;
+  }
+
+  if (persist_exists(MESSAGE_KEY_enableWeather)){
+    config.enableWeather = persist_read_bool(MESSAGE_KEY_enableWeather);
+  }else{
+    config.enableWeather = false;
+  }
+
+  if (persist_exists(MESSAGE_KEY_weatherUnits)){
+    config.weatherUnits = persist_read_int(MESSAGE_KEY_weatherUnits);
+  }else{
+    config.weatherUnits = 0;
+  }
+
+  if (persist_exists(MESSAGE_KEY_lastWeather)){
+    persist_read_string(MESSAGE_KEY_lastWeather, s_temp_buffer, sizeof(s_temp_buffer));
+  }
+
+  if (persist_exists(MESSAGE_KEY_lastTimeWeather)){
+    last_time_weather = persist_read_int(MESSAGE_KEY_lastTimeWeather);
+  }else{
+    last_time_weather = 0;
+  }
+
+  if (persist_exists(MESSAGE_KEY_weatherMinutes)){
+    config.weatherMinutes = persist_read_int(MESSAGE_KEY_weatherMinutes);
+  }else{
+    config.weatherMinutes = 60;
   }
 
   if (persist_exists(MESSAGE_KEY_weatherApi)){
@@ -1590,6 +1623,7 @@ static void read_configuration(){
      APP_LOG(APP_LOG_LEVEL_DEBUG, "infoRightBackColor: %d",config.infoRightBackColor);
      APP_LOG(APP_LOG_LEVEL_DEBUG, "infoLeftBackColor: %d",config.infoLeftBackColor);
      APP_LOG(APP_LOG_LEVEL_DEBUG, "dailyStepsGoal: %d",config.dailyStepsGoal);
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Last time weather: %u",last_time_weather);
    }
 
 }
@@ -1597,6 +1631,9 @@ static void read_configuration(){
 
 
 static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) {
+  if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter prv_inbox_received_handler");
+  bool configuration_updated = false;  
   // // Read color preferences
   // Tuple *bg_color_t = dict_find(iter, MESSAGE_KEY_BackgroundColor);
   // if(bg_color_t) {
@@ -1621,37 +1658,46 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   Tuple *configOption = dict_find(iter, MESSAGE_KEY_enableSeconds);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableSeconds,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableInfoBottom);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableInfoBottom,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableBattery);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableBattery,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableInfoLeft);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableInfoLeft,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableInfoRight);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableInfoRight,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableHealth);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableHealth,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableHourMarks);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableHourMarks,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableMinutesMarks);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableMinutesMarks,configOption->value->int32 == 1);
+    configuration_updated = true;configuration_updated = true;
   }
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableConnection,configOption->value->int32 == 1);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_backgroundcolor);
   if(configOption){
@@ -1660,58 +1706,82 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   configOption = dict_find(iter, MESSAGE_KEY_hourHandsColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_hourHandsColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_minuteHandsColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_minuteHandsColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_smallHandsColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_smallHandsColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_hourMarkersColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_hourMarkersColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_minuteMarkersColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_minuteMarkersColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_numbersColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_numbersColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_batteryCircleColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_batteryCircleColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_healthCircleColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_healthCircleColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_infoCirclesColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_infoCirclesColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_infoLeftBackColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_infoLeftBackColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_infoRightBackColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_infoRightBackColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_secondsBackColor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_secondsBackColor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_dayInMonthcolor);
   if(configOption){
     persist_write_int(MESSAGE_KEY_dayInMonthcolor,configOption->value->int32);
+    configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_dailyStepsGoal);
   if(configOption){
     persist_write_int(MESSAGE_KEY_dailyStepsGoal,configOption->value->int32);
+    configuration_updated = true;
+  }
+   configOption = dict_find(iter, MESSAGE_KEY_weatherProvider);
+  if(configOption){
+    persist_write_int(MESSAGE_KEY_weatherProvider,configOption->value->int32);
+    configuration_updated = true;
+  }
+  configOption = dict_find(iter, MESSAGE_KEY_enableWeather);
+  if(configOption){
+    persist_write_int(MESSAGE_KEY_enableWeather,configOption->value->int32);
+    configuration_updated = true;
   }
 
   configOption = dict_find(iter, MESSAGE_KEY_weatherApi);
@@ -1719,21 +1789,37 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
      if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Value %s",configOption->value->cstring);
     persist_write_string(MESSAGE_KEY_weatherApi,configOption->value->cstring);
+    configuration_updated = true;
   }
+
+  configOption = dict_find(iter, MESSAGE_KEY_weatherUnits);
+  if(configOption){    
+    persist_write_int(MESSAGE_KEY_weatherUnits,configOption->value->int32);
+    configuration_updated = true;
+  }
+  
+  configOption = dict_find(iter, MESSAGE_KEY_weatherMinutes);
+  if(configOption){    
+    persist_write_int(MESSAGE_KEY_weatherMinutes,configOption->value->int32);
+    configuration_updated = true;
+  }
+
   
 
   Tuple *data = dict_find(iter, MESSAGE_KEY_READY);
-  if(data)
-  {
-    //APP_LOG(APP_LOG_LEVEL_DEBUG, "Ready Received! Requesting weather.");
+  if(data){
     if (DEBUG)
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Generic weather fetch");
-    generic_weather_fetch(weather_callback);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Ready Received! Requesting weather.");
+    time_t t = time(NULL);
+    struct tm *tm_now = localtime(&t);
+    update_weather(mktime(tm_now));
+
   }
-
-  read_configuration();
-  refreshAllLayers();
-
+  if (configuration_updated){
+    last_time_weather = 0;
+    read_configuration();
+    refreshAllLayers();
+  }
 }
 
 
@@ -1741,6 +1827,8 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
 
 
 static void init() {
+  if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter init");
   read_configuration();
   //tick_timer_service_subscribe(config.enableSeconds ? SECOND_UNIT : MINUTE_UNIT, tick_handler);
   

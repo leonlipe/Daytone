@@ -98,7 +98,32 @@
       "type": "input",
       "messageKey": "weatherApi",
       "label": "API Key"
-    }
+    },
+    {
+      "type": "radiogroup",
+      "messageKey": "weatherUnits",
+      "label": "Weather units",
+      "options": [
+        { 
+          "label": "Celcius", 
+          "value": "0" 
+        },
+        { 
+          "label": "Fahrenheit", 
+          "value": "1" 
+        }
+      ]
+    },
+    {
+      "type": "slider",
+      "messageKey": "weatherMinutes",
+      "defaultValue": 60,
+      "label": "Weather refresh rate",
+      "description": "Minutes for refreshing weather",
+      "min": 1,
+      "max": 180,
+      "step": 1
+    }               
   ]
   },
   {
@@ -113,7 +138,7 @@
       "messageKey": "enableHealth",
       "label": "Enable health"
     },
-        {
+    {
       "type": "slider",
       "messageKey": "dailyStepsGoal",
       "defaultValue": 10000,

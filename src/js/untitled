@@ -17,6 +17,8 @@ numeralsKind
 dailyStepsGoal
 enableInfoBottom
 weatherApi
+weatherProvider
+enableWeather
 
 MESSAGE_KEY_backgroundcolor;
 MESSAGE_KEY_hourHandsColor;
@@ -38,6 +40,11 @@ MESSAGE_KEY_enableConnection;
 MESSAGE_KEY_numeralsKind
 MESSAGE_KEY_dailyStepsGoal
 MESSAGE_KEY_enableInfoBottom
+MESSAGE_KEY_weatherApi
+
+MESSAGE_KEY_weatherProvider
+
+
 
 options": [
         { 

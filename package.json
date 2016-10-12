@@ -59,7 +59,11 @@
       "dailyStepsGoal",
       "weatherApi",
       "weatherProvider",
-      "enableWeather"
+      "enableWeather",
+      "weatherUnits",
+      "weatherMinutes",
+      "lastTimeWeather",
+      "lastWeather"
     ],
     "resources": {
       "media": [
