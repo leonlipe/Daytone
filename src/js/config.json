@@ -41,6 +41,11 @@
     },
     {
       "type": "toggle",
+      "messageKey": "enableInfoBottom",
+      "label": "Enable bottom infocircle"
+    },
+    {
+      "type": "toggle",
       "messageKey": "enableHourMarks",
       "label": "Enable hour markers"
     },
@@ -58,12 +63,65 @@
   "items": [
     {
       "type": "heading",
+      "defaultValue": "Weather configuration"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableWeather",
+      "label": "Enable weather"
+    },
+    {
+      "type": "select",
+      "messageKey": "weatherProvider",
+      "defaultValue": "0",
+      "label": "Weather provider",
+      "options": [
+        { 
+          "label": "Open Weather Map", 
+          "value": "0" 
+        },
+        { 
+          "label": "Weather Underground",
+          "value": "1" 
+        },
+        { 
+          "label": "Forecast IO",
+          "value": "2" 
+        },
+        { 
+          "label": "Yahoo Weather",
+          "value": "3" 
+        }
+      ]
+    },
+    {
+      "type": "input",
+      "messageKey": "weatherApi",
+      "label": "API Key"
+    }
+  ]
+  },
+  {
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
       "defaultValue": "Health configuration"
     },
     {
       "type": "toggle",
       "messageKey": "enableHealth",
       "label": "Enable health"
+    },
+        {
+      "type": "slider",
+      "messageKey": "dailyStepsGoal",
+      "defaultValue": 10000,
+      "label": "Steps goal",
+      "description": "Number of daily steps as a goal.",
+      "min": 1,
+      "max": 50000,
+      "step": 1
     }
   ]
   },

@@ -1,5 +1,7 @@
 #include <pebble.h>
 #include "health.h"
+#include <pebble-generic-weather/pebble-generic-weather.h>
+#include <pebble-events/pebble-events.h>
 
 #define CONFIG_INVERTED 0
 //#define CONFIG_CENTER_SECONDS_X 72
@@ -121,6 +123,7 @@ static Layer *s_background_layer;
 //static GBitmap *s_background_bitmap;
 
 //static temp_vals[];
+static char s_temp_buffer[256];
 
 static Time s_last_time;
 static char s_weekday_buffer[8], s_month_buffer[8], s_day_in_month_buffer[3];
@@ -172,9 +175,11 @@ typedef struct {
  bool enableHealth; 
  bool enableInfoLeft; 
  bool enableInfoRight;
+ bool enableInfoBottom;
  bool enableMinutesMarks;
  bool enableHourMarks;
  bool enableConnection;
+ bool enableWeather;
  int backgroundcolor;
  int hourHandsColor;
  int minuteHandsColor;
@@ -189,9 +194,12 @@ typedef struct {
  int infoRightBackColor;
  int secondsBackColor;
  int dayInMonthcolor;
+ int dailyStepsGoal;
+ int weatherProvider;
 
 } Configuration;
 
+char weatherApi[50];
 static Battery s_last_battery;
 static Configuration config;
 
@@ -317,8 +325,10 @@ static void app_connection_handler(bool connected) {
   if(DEBUG)
     APP_LOG(APP_LOG_LEVEL_INFO, "Pebble app %sconnected", connected ? "" : "dis");
   if (connected){
+     vibes_short_pulse();
     text_layer_set_text(s_connection_layer, "");    
   }else{
+     vibes_double_pulse();
     text_layer_set_text(s_connection_layer, "ha");
   }
 }
@@ -386,8 +396,8 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
     int health_steps_today = health_get_steps_today();
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.healthCircleColor));
     int steps_goal_percent = 10;
-    if (health_steps_today <= HEALTH_STEPS_GOAL){
-       steps_goal_percent = health_steps_today * 10 / HEALTH_STEPS_GOAL;
+    if (health_steps_today <= config.dailyStepsGoal){
+       steps_goal_percent = health_steps_today * 10 / config.dailyStepsGoal;
      }
 
     
@@ -467,7 +477,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
 
    
     
-      if (config.enableSeconds){
+      if (config.enableInfoBottom){
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
         graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
@@ -552,7 +562,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
     }
     }
 
-    if (config.enableSeconds){
+    if (config.enableInfoBottom){
       for(int h = 0; h < 12; h++) { 
             if(h == 0 || h == 3 || h==6 || h==9){
               GPoint point = (GPoint) {
@@ -582,7 +592,7 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
 
     // Cuadros del dia de mes
     
-    if (config.enableSeconds){
+    if (config.enableInfoBottom){
       graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
       graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
     }else{
@@ -710,9 +720,15 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
     Time now = s_last_time;
-
-    GPoint second_hand_long = make_hand_point(now.seconds, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
-    GPoint second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 10, center_seconds);
+    GPoint second_hand_long;
+    GPoint second_hand_inverted;
+    if(config.enableSeconds){
+       second_hand_long = make_hand_point(now.seconds, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
+       second_hand_inverted = make_hand_point(inverse_hand(now.seconds), 60, 10, center_seconds);
+    }else{
+       second_hand_long = make_hand_point(0, 60, CONFIG_HAND_LENGTH_SEC, center_seconds);
+       second_hand_inverted = make_hand_point(inverse_hand(0), 60, 10, center_seconds);
+    }
     float minute_angle = TRIG_MAX_ANGLE * now.minutes / 60; //now.minutes
     float hour_angle = TRIG_MAX_ANGLE * now.hours / 12; //now.hours
     hour_angle += (minute_angle / TRIG_MAX_ANGLE) * (TRIG_MAX_ANGLE / 12);
@@ -721,7 +737,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
 
-    if(config.enableSeconds){
+    
         // Dibujar los segundos
         
           graphics_context_set_stroke_color(ctx, GColorFromHEX(config.smallHandsColor));
@@ -743,7 +759,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCirclesColor));         
 
         graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 2);
-      }
+      
       
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.smallHandsColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.smallHandsColor));
@@ -780,7 +796,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
     }
      
 
-   if (config.enableSeconds){
+   if (config.enableInfoBottom){
     graphics_context_set_stroke_color(ctx, GColorFromHEX(config.secondsBackColor));
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));    
     graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 1);
@@ -986,7 +1002,55 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
 
 }
 
+static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus status){
+  switch(status) {
+    case GenericWeatherStatusAvailable:
+    {
+      
+      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%dC",info->temp_c);
+      //text_layer_set_text(s_text_layer, s_buffer);
+      if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Generic weather fetch callback: %s",s_temp_buffer);
+    }
+      break;
+    case GenericWeatherStatusNotYetFetched:
+      if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusNotYetFetched");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusNotYetFetched");
+      break;
+    case GenericWeatherStatusBluetoothDisconnected:
+    if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusBluetoothDisconnected");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusBluetoothDisconnected");
+      break;
+    case GenericWeatherStatusPending:
+    if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusPending");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusPending");
+      break;
+    case GenericWeatherStatusFailed:
+    if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusFailed");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusFailed");
+      break;
+    case GenericWeatherStatusBadKey:
+    if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusBadKey");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusBadKey");
+      break;
+    case GenericWeatherStatusLocationUnavailable:
+    if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusLocationUnavailable");
+      //text_layer_set_text(s_text_layer, "GenericWeatherStatusLocationUnavailable");
+      break;
+  }
+
+  
+
+}
+
 static void window_load(Window *window) {
+  
   s_connection_icons_14 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CONNECTION_ICONS_14));
 
   window_set_background_color(s_main_window, GColorFromHEX(config.backgroundcolor));
@@ -1166,6 +1230,12 @@ static void window_load(Window *window) {
   text_layer_set_text(s_connection_layer, "");
 
   
+  s_temperature_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-17, 44, 40));
+  text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_temperature_layer, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_background_color(s_temperature_layer, GColorClear);
+  text_layer_set_text(s_temperature_layer, s_temp_buffer);
 
 
   s_seconds_layer = layer_create(bounds);
@@ -1216,6 +1286,7 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, s_battery_layer);
   layer_add_child(window_layer, s_health_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_connection_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
 
 
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
@@ -1261,7 +1332,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_battery_layer);
   layer_destroy(s_health_layer);
   text_layer_destroy(s_connection_layer);
- // text_layer_destroy(s_temperature_layer);
+  text_layer_destroy(s_temperature_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
   gpath_destroy(s_hour_hand_path_bold_ptr);
@@ -1334,6 +1405,12 @@ static void read_configuration(){
     config.enableSeconds = persist_read_bool(MESSAGE_KEY_enableSeconds);
   }else{
     config.enableSeconds = true;
+  }
+
+  if (persist_exists(MESSAGE_KEY_enableInfoBottom)){
+    config.enableInfoBottom = persist_read_bool(MESSAGE_KEY_enableInfoBottom);
+  }else{
+    config.enableInfoBottom = true;
   }
 
   if (persist_exists(MESSAGE_KEY_enableBattery)){
@@ -1462,6 +1539,18 @@ static void read_configuration(){
     config.dayInMonthcolor = 11184810;
   }
 
+   if (persist_exists(MESSAGE_KEY_dailyStepsGoal)){
+    config.dailyStepsGoal = persist_read_int(MESSAGE_KEY_dailyStepsGoal);
+  }else{
+    config.dailyStepsGoal = 10000;
+  }
+
+  if (persist_exists(MESSAGE_KEY_weatherApi)){
+    persist_read_string(MESSAGE_KEY_weatherApi, weatherApi, sizeof(weatherApi));
+  }else{
+    snprintf(weatherApi,sizeof(weatherApi),"%s","XXXXXXX");
+  }
+
 
 
   // Dspues de leer, configurar adecuadamente las suscipciones
@@ -1500,6 +1589,7 @@ static void read_configuration(){
    if(DEBUG){
      APP_LOG(APP_LOG_LEVEL_DEBUG, "infoRightBackColor: %d",config.infoRightBackColor);
      APP_LOG(APP_LOG_LEVEL_DEBUG, "infoLeftBackColor: %d",config.infoLeftBackColor);
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "dailyStepsGoal: %d",config.dailyStepsGoal);
    }
 
 }
@@ -1531,6 +1621,10 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   Tuple *configOption = dict_find(iter, MESSAGE_KEY_enableSeconds);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableSeconds,configOption->value->int32 == 1);
+  }
+  configOption = dict_find(iter, MESSAGE_KEY_enableInfoBottom);
+  if(configOption){
+    persist_write_bool(MESSAGE_KEY_enableInfoBottom,configOption->value->int32 == 1);
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableBattery);
   if(configOption){
@@ -1615,7 +1709,27 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   if(configOption){
     persist_write_int(MESSAGE_KEY_dayInMonthcolor,configOption->value->int32);
   }
+  configOption = dict_find(iter, MESSAGE_KEY_dailyStepsGoal);
+  if(configOption){
+    persist_write_int(MESSAGE_KEY_dailyStepsGoal,configOption->value->int32);
+  }
+
+  configOption = dict_find(iter, MESSAGE_KEY_weatherApi);
+  if(configOption){
+     if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Value %s",configOption->value->cstring);
+    persist_write_string(MESSAGE_KEY_weatherApi,configOption->value->cstring);
+  }
   
+
+  Tuple *data = dict_find(iter, MESSAGE_KEY_READY);
+  if(data)
+  {
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "Ready Received! Requesting weather.");
+    if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Generic weather fetch");
+    generic_weather_fetch(weather_callback);
+  }
 
   read_configuration();
   refreshAllLayers();
@@ -1635,8 +1749,12 @@ static void init() {
   
   s_main_window = window_create();
  // s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
+  generic_weather_init();
+  generic_weather_set_provider(GenericWeatherProviderWeatherUnderground);
+  generic_weather_set_api_key(weatherApi);
+  generic_weather_set_feels_like(false);
 
-  //Aplite
+  
   
   connection_service_subscribe((ConnectionHandlers) {
     .pebble_app_connection_handler = app_connection_handler,
@@ -1655,9 +1773,12 @@ static void init() {
     if (SUBSCRIBE_TO_BATTERY)
 
   handle_battery(battery_state_service_peek());
-
-  app_message_register_inbox_received(prv_inbox_received_handler);
-  app_message_open(256, 256);
+events_app_message_request_inbox_size(1024);
+events_app_message_request_outbox_size(1024);
+events_app_message_register_inbox_received(prv_inbox_received_handler,NULL);
+events_app_message_open();
+  
+  //app_message_open(256, 256);
 
 
 

@@ -7,10 +7,14 @@
   ],
   "private": true,
   "dependencies": {
-    "pebble-clay": "^1.0.2"
+    "pebble-clay": "^1.0.2",
+    "pebble-events": "^1.1.0",
+    "pebble-generic-weather": "^1.1.5",
+    "pebble-owm-weather": "^1.0.0"
   },
   "capabilities": [
-    "health",  "configurable"
+    "health",
+    "configurable"
   ],
   "pebble": {
     "displayName": "Analogy II",
@@ -18,16 +22,20 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      
       "basalt"
     ],
     "watchapp": {
       "watchface": true
     },
-    "messageKeys": [      
+    "messageKeys": [
+      "OWMAPIKEY",
+      "READY",
+      "USERLATITUDE",
+      "USERLONGITUDE",
       "enableHourMarks",
       "enableMinutesMarks",
       "enableSeconds",
+      "enableInfoBottom",
       "enableBattery",
       "enableConnection",
       "enableHealth",
@@ -47,15 +55,19 @@
       "infoLeftBackColor",
       "infoRightBackColor",
       "secondsBackColor",
-      "dayInMonthcolor"
+      "dayInMonthcolor",
+      "dailyStepsGoal",
+      "weatherApi",
+      "weatherProvider",
+      "enableWeather"
     ],
     "resources": {
       "media": [
         {
-          "type":"font",
-          "name":"FONT_CONNECTION_ICONS_14",
-          "file":"fonts/conn-icons.ttf"
-        } 
+          "type": "font",
+          "name": "FONT_CONNECTION_ICONS_14",
+          "file": "fonts/conn-icons.ttf"
+        }
       ]
     }
   }

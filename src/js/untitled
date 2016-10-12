@@ -12,7 +12,11 @@ int infoCircleLeftBackColor;
 int infoCircleRightBackColor;
 int secondsBackColor;
 int dayInMonthcolor;
-
+enableConnection
+numeralsKind
+dailyStepsGoal
+enableInfoBottom
+weatherApi
 
 MESSAGE_KEY_backgroundcolor;
 MESSAGE_KEY_hourHandsColor;
@@ -29,4 +33,45 @@ MESSAGE_KEY_infoCircleRightBackColor;
 
 MESSAGE_KEY_secondsBackColor;
 MESSAGE_KEY_dayInMonthcolor;
+MESSAGE_KEY_enableConnection;
+
+MESSAGE_KEY_numeralsKind
+MESSAGE_KEY_dailyStepsGoal
+MESSAGE_KEY_enableInfoBottom
+
+options": [
+        { 
+          "label": "All", 
+          "value": "1" 
+        },
+        { 
+          "label": "12,3,6,9",
+          "value": "2" 
+        },
+        { 
+          "label": "2,6,10",
+          "value": "3" 
+        },
+        { 
+          "label": "12",
+          "value": "4" 
+        }
+
+
+static void set_numerals_visivility(){
+  // layer_set_hidden(text_layer_get_layer(s_12_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 2 || config.numeralsKind == 4) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_01_hour_layer), (config.numeralsKind == 1) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_02_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 3) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_03_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 2) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_04_hour_layer), (config.numeralsKind == 1) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_05_hour_layer), (config.numeralsKind == 1) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_06_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 2 || config.numeralsKind == 3) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_07_hour_layer), (config.numeralsKind == 1) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_08_hour_layer), (config.numeralsKind == 1) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_09_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 2) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_10_hour_layer), (config.numeralsKind == 1 || config.numeralsKind == 3) ? false : true);
+  //   layer_set_hidden(text_layer_get_layer(s_11_hour_layer), (config.numeralsKind == 1) ? false : true);
+
+}
+
 
