@@ -100,20 +100,10 @@
       "label": "API Key"
     },
     {
-      "type": "radiogroup",
+      "type": "toggle",
       "messageKey": "weatherUnits",
-      "label": "Weather units",
-      "options": [
-        { 
-          "label": "Celcius", 
-          "value": "0" 
-        },
-        { 
-          "label": "Fahrenheit", 
-          "value": "1" 
-        }
-      ]
-    },
+      "label": "Use Fahrenheit"
+    },    
     {
       "type": "slider",
       "messageKey": "weatherMinutes",

@@ -943,6 +943,8 @@ static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus stat
   switch(status) {
     case GenericWeatherStatusAvailable:
     {
+      if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather units config: %d",config.weatherUnits);
       if (config.weatherUnits == 0){
         snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%dC",info->temp_c);
       }else{
@@ -1816,8 +1818,8 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
 
   }
   if (configuration_updated){
-    last_time_weather = 0;
     read_configuration();
+    last_time_weather = 0;
     refreshAllLayers();
   }
 }
