@@ -92,7 +92,7 @@
 #define SUBSCRIBE_TO_BATTERY true
 #define SUBSCRIBE_TO_HEALTH true
 #define SHOWINFOCIRCLES true
-
+#define SECONDS_FOR_POPUP 2000
 
 //static GFont s_connection_icons_18;
 
@@ -118,14 +118,15 @@ static unsigned int last_time_weather;
  
 
 static Window *s_main_window;
-static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer;
+static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer, *s_popup_layer;
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_weather_layer;
+static TextLayer *s_weekday_layer_popup, *s_day_in_month_layer_popup, *s_month_layer_popup, *s_weather_layer_popup;
 static Layer *s_background_layer, *s_connection_layer;
 //static GBitmap *s_background_bitmap;
 
 //static temp_vals[];
-static char s_temp_buffer[256];
+static char s_temp_buffer[10];
 
 static Time s_last_time;
 static char s_weekday_buffer[8], s_month_buffer[8], s_day_in_month_buffer[3];
@@ -206,6 +207,26 @@ typedef struct {
 char weatherApi[50];
 static Battery s_last_battery;
 static Configuration config;
+
+static void hide_popup_callback(void *data){
+  layer_set_hidden(s_popup_layer, true);
+  layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_month_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
+}
+
+static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
+  layer_set_hidden(s_popup_layer, false);
+  layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), false);
+  layer_set_hidden(text_layer_get_layer(s_month_layer_popup), false);
+  layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), false);
+  layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), false);  
+  app_timer_register(SECONDS_FOR_POPUP,hide_popup_callback,NULL);
+}
+
+
+
 
 static void handle_battery(BatteryChargeState charge_state) {
   s_last_battery.charge_percent = charge_state.charge_percent;
@@ -297,6 +318,11 @@ static void refreshAllLayers(){
   text_layer_set_text_color(s_day_in_month_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_text_color(s_month_layer, GColorFromHEX(config.infoCirclesColor)); 
   text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_day_in_month_layer_popup, GColorFromHEX(config.dayInMonthcolor));
+  text_layer_set_text_color(s_month_layer_popup, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_weekday_layer_popup, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_weather_layer, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_weather_layer_popup, GColorFromHEX(config.infoCirclesColor)); 
   window_set_background_color(s_main_window, GColorFromHEX(config.backgroundcolor));
 
   layer_mark_dirty(s_background_layer);
@@ -348,6 +374,7 @@ static void change_layers(bool value){
     layer_set_hidden(s_health_layer, value);
     layer_set_hidden(s_bg_layer, value);
     layer_set_hidden(s_seconds_layer, value);
+    //layer_set_hidden(s_popup_layer, value);
     layer_set_hidden(text_layer_get_layer(s_12_hour_layer), value);
     layer_set_hidden(text_layer_get_layer(s_01_hour_layer), value);
     layer_set_hidden(text_layer_get_layer(s_02_hour_layer), value);
@@ -363,8 +390,12 @@ static void change_layers(bool value){
     layer_set_hidden(text_layer_get_layer(s_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_day_in_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weekday_layer), value);
-    //layer_set_hidden(text_layer_get_layer(s_connection_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weather_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_month_layer_popup), value);
+    layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), value);
+    layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), value);
+    layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), value);
+
 
 }
 
@@ -387,6 +418,76 @@ static void prv_unobstructed_did_change(void *context) {
     // Screen is no longer obstructed, show the date
     change_layers(false);
   }
+}
+
+/**
+ * Update popuplayer with the apropiate shapes
+ * @param layer The Layer
+ * @param ctx   The Context
+ */
+static void popup_layer_update_proc(Layer *layer, GContext *ctx) {
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);  
+  GPoint center = grect_center_point(&unobstructed_bounds);
+  
+   GPoint center_seconds = (GPoint) {
+    .x = center.x,
+    .y = center.y+SECONDS_CENTER_OFFSET_Y,
+  };
+
+   GPoint center_info_left = (GPoint) {
+    .x = center.x - SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
+  };
+   GPoint center_info_right = (GPoint) {
+    .x = center.x + SECONDS_CENTER_OFFSET_X,
+    .y = center.y - SECONDS_CENTER_OFFSET_Y,
+  };
+
+   
+    
+      if (config.enableInfoBottom){
+        graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
+        graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
+        graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE-1);
+        graphics_draw_circle(ctx,center_seconds,CONFIG_RADIUS_SECS_CIRCLE);
+       
+      }
+
+     if (config.enableInfoLeft){
+        graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+        graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE+3);
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoLeftBackColor));
+        graphics_fill_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE-1);
+        graphics_draw_circle(ctx,center_info_left,CONFIG_RADIUS_INFOLEFT_CIRCLE);
+      }
+      if(config.enableInfoRight){
+        graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+        graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE+3);
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoRightBackColor));
+        graphics_fill_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE-1);
+        graphics_draw_circle(ctx,center_info_right,CONFIG_RADIUS_INFORIGHT_CIRCLE);
+      }
+   
+    
+
+
+    // Cuadros del dia de mes
+    
+    if (config.enableInfoBottom){
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
+    }else{
+      graphics_context_set_stroke_color(ctx, GColorFromHEX(config.hourMarkersColor));
+      graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+    }  
+    graphics_draw_rect(ctx, GRect(64, center_seconds.y+5, 17, 15));  
+    graphics_fill_rect(ctx, GRect(63, center_seconds.y+10, 18,5), 0, GCornersAll);  
+    graphics_fill_rect(ctx, GRect(69, center_seconds.y+5, 6,16), 0, GCornersAll);  
+
 }
 
 /*
@@ -1109,7 +1210,7 @@ static void window_load(Window *window) {
   s_health_layer = layer_create(bounds);
   layer_set_update_proc(s_health_layer, health_layer_update);
 
-
+ 
  // DIA DEL MES
   s_day_in_month_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
   text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
@@ -1118,6 +1219,11 @@ static void window_load(Window *window) {
   text_layer_set_background_color(s_day_in_month_layer, GColorClear);
   //text_layer_set_text(s_day_in_month_layer, "31");  
 
+  s_day_in_month_layer_popup = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
+  text_layer_set_text_alignment(s_day_in_month_layer_popup, GTextAlignmentCenter);
+  text_layer_set_font(s_day_in_month_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_color(s_day_in_month_layer_popup, GColorFromHEX(config.dayInMonthcolor));
+  text_layer_set_background_color(s_day_in_month_layer_popup, GColorClear);
 
   // DIA DE LA SEMANA
   if (SHOWINFOCIRCLES){
@@ -1130,6 +1236,16 @@ static void window_load(Window *window) {
   text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.infoCirclesColor));
   text_layer_set_background_color(s_weekday_layer, GColorClear);
 
+// DIA DE LA SEMANA
+  if (SHOWINFOCIRCLES){
+    s_weekday_layer_popup = text_layer_create(GRect(20, 30, 44, 40));
+  }else{
+    s_weekday_layer_popup = text_layer_create(GRect(40, 35, 44, 40));
+  }
+  text_layer_set_text_alignment(s_weekday_layer_popup, GTextAlignmentCenter);
+  text_layer_set_font(s_weekday_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_weekday_layer_popup, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_background_color(s_weekday_layer_popup, GColorClear);
  
   // MES
   if (SHOWINFOCIRCLES){
@@ -1141,6 +1257,16 @@ static void window_load(Window *window) {
   text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_month_layer, GColorFromHEX(config.infoCirclesColor)); 
   text_layer_set_background_color(s_month_layer, GColorClear);
+
+  if (SHOWINFOCIRCLES){
+    s_month_layer_popup = text_layer_create(GRect(80, 30, 44, 40));
+  }else{
+    s_month_layer_popup = text_layer_create(GRect(60, 35, 44, 40));
+  }
+  text_layer_set_text_alignment(s_month_layer_popup, GTextAlignmentCenter);
+  text_layer_set_font(s_month_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_month_layer_popup, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_background_color(s_month_layer_popup, GColorClear);
 
   // DIGITAL TIME
   s_digital_time_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 110, 44, 40));
@@ -1242,12 +1368,20 @@ static void window_load(Window *window) {
   text_layer_set_background_color(s_weather_layer, GColorClear);
   text_layer_set_text(s_weather_layer, s_temp_buffer);
 
+  s_weather_layer_popup = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
+  text_layer_set_text_alignment(s_weather_layer_popup, GTextAlignmentCenter);
+  text_layer_set_font(s_weather_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_weather_layer_popup, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_background_color(s_weather_layer_popup, GColorClear);
+  text_layer_set_text(s_weather_layer_popup, s_temp_buffer);
 
   s_seconds_layer = layer_create(bounds);
   s_connection_layer = layer_create(bounds);
+  s_popup_layer = layer_create(bounds);
 
   layer_set_update_proc(s_seconds_layer, bg_update_seconds_proc);
   layer_set_update_proc(s_connection_layer, bg_update_connection_proc);
+  layer_set_update_proc(s_popup_layer, popup_layer_update_proc);
 
   // s_weather_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 44, 44, 40));
   // text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
@@ -1268,10 +1402,16 @@ static void window_load(Window *window) {
   s_canvas_layer = layer_create(bounds);
   layer_set_update_proc(s_canvas_layer, draw_proc);
 
+ 
+
+
   text_layer_set_text(s_digital_time_layer, "");  
   text_layer_set_text(s_weekday_layer, s_weekday_buffer);
   text_layer_set_text(s_day_in_month_layer, s_day_in_month_buffer);
   text_layer_set_text(s_month_layer, s_month_buffer);
+  text_layer_set_text(s_weekday_layer_popup, s_weekday_buffer);
+  text_layer_set_text(s_day_in_month_layer_popup, s_day_in_month_buffer);
+  text_layer_set_text(s_month_layer_popup, s_month_buffer);
  // text_layer_set_text(s_weather_layer, "...");  
   layer_add_child(window_layer, s_background_layer);
 
@@ -1297,10 +1437,21 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
 
 
+
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
   //layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
   layer_add_child(window_layer, s_canvas_layer);
-  
+  layer_add_child(window_layer, s_popup_layer);
+  layer_add_child(window_layer, text_layer_get_layer(s_weather_layer_popup));
+  layer_add_child(window_layer, text_layer_get_layer(s_month_layer_popup));
+  layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer_popup));
+  layer_add_child(window_layer, text_layer_get_layer(s_day_in_month_layer_popup));
+
+  layer_set_hidden(s_popup_layer, true);
+  layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_month_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
+  layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
   layer_set_hidden(s_connection_layer, true);
    s_hour_hand_path_bold_ptr = gpath_create(&HOUR_HAND_PATH_BOLD);
    s_minute_hand_path_bold_ptr = gpath_create(&MINUTE_HAND_PATH_BOLD);
@@ -1342,11 +1493,17 @@ static void window_unload(Window *window) {
   layer_destroy(s_battery_layer);
   layer_destroy(s_health_layer);
   layer_destroy(s_connection_layer);
+  layer_destroy(s_popup_layer);
   text_layer_destroy(s_weather_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
   gpath_destroy(s_hour_hand_path_bold_ptr);
   gpath_destroy(s_minute_hand_path_bold_ptr);
+  text_layer_destroy(s_weather_layer_popup);
+  text_layer_destroy(s_weekday_layer_popup);
+  text_layer_destroy(s_day_in_month_layer_popup);
+  text_layer_destroy(s_month_layer_popup);
+
 
   tick_timer_service_unsubscribe();
   if (config.enableBattery)
@@ -1354,6 +1511,7 @@ static void window_unload(Window *window) {
   if (config.enableHealth)
     health_service_events_unsubscribe();
 
+  accel_tap_service_unsubscribe();
 
   connection_service_unsubscribe();
   generic_weather_deinit();
@@ -1899,7 +2057,8 @@ static void init() {
   generic_weather_set_feels_like(false);
 
   
-  
+  accel_tap_service_subscribe(accel_tap_handler);
+
   connection_service_subscribe((ConnectionHandlers) {
     .pebble_app_connection_handler = app_connection_handler,
     .pebblekit_connection_handler = kit_connection_handler
@@ -1916,7 +2075,7 @@ static void init() {
   tick_handler(tm_now, SECOND_UNIT);
     if (SUBSCRIBE_TO_BATTERY)
 
-  handle_battery(battery_state_service_peek());
+handle_battery(battery_state_service_peek());
 events_app_message_request_inbox_size(1024);
 events_app_message_request_outbox_size(1024);
 events_app_message_register_inbox_received(prv_inbox_received_handler,NULL);
