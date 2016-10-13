@@ -444,7 +444,7 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
   // } 
   if (DEBUG)
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Battery Val: %i", 36 * s_last_battery.charge_percent);
-  graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
+    graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
   }else{
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
     graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));

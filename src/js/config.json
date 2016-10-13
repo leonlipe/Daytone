@@ -5,7 +5,7 @@
   }, 
   { 
     "type": "text", 
-    "defaultValue": "Configuration Page" 
+    "defaultValue": "DayTone Configuration Page, here you can change options for the watchface." 
   },
   {
   "type": "section",
