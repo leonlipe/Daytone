@@ -462,15 +462,15 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
 
 static void bg_update_connection_proc(Layer *layer, GContext *ctx){
   GRect full_bounds = layer_get_bounds(layer);
-  graphics_context_set_stroke_color(ctx, GColorRed);
-  graphics_context_set_fill_color(ctx, GColorRed);
+  graphics_context_set_stroke_color(ctx, GColorFromHEX(config.smallHandsColor));
+  graphics_context_set_fill_color(ctx, GColorFromHEX(config.smallHandsColor));
   graphics_draw_rect(ctx,full_bounds);
   full_bounds.origin.x++;
   full_bounds.origin.y++;
   full_bounds.size.w = full_bounds.size.w -2;
   full_bounds.size.h =  full_bounds.size.h -2;
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, GColorFromHEX(config.secondsBackColor));
+  graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
   graphics_draw_rect(ctx,full_bounds);    
 }
 
