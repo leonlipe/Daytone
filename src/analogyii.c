@@ -2,6 +2,8 @@
 #include "health.h"
 #include <pebble-generic-weather/pebble-generic-weather.h>
 #include <pebble-events/pebble-events.h>
+#include <kiezelpay-core/kiezelpay.h>
+
 
 #define CONFIG_INVERTED 0
 //#define CONFIG_CENTER_SECONDS_X 72
@@ -118,7 +120,7 @@ static unsigned int last_time_weather;
 static Window *s_main_window;
 static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer;
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
-static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_temperature_layer, *s_connection_layer;
+static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_weather_layer, *s_connection_layer;
 static Layer *s_background_layer;
 //static GBitmap *s_background_bitmap;
 
@@ -362,6 +364,7 @@ static void change_layers(bool value){
     layer_set_hidden(text_layer_get_layer(s_day_in_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weekday_layer), value);
     layer_set_hidden(text_layer_get_layer(s_connection_layer), value);
+    layer_set_hidden(text_layer_get_layer(s_weather_layer), value);
 
 }
 
@@ -1226,26 +1229,26 @@ static void window_load(Window *window) {
   text_layer_set_text(s_connection_layer, "");
 
   
-  s_temperature_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
-  text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_temperature_layer, GColorFromHEX(config.infoCirclesColor));
-  text_layer_set_background_color(s_temperature_layer, GColorClear);
-  text_layer_set_text(s_temperature_layer, s_temp_buffer);
+  s_weather_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
+  text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_weather_layer, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_background_color(s_weather_layer, GColorClear);
+  text_layer_set_text(s_weather_layer, s_temp_buffer);
 
 
   s_seconds_layer = layer_create(bounds);
   layer_set_update_proc(s_seconds_layer, bg_update_seconds_proc);
 
-  // s_temperature_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 44, 44, 40));
-  // text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
-  // text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  // s_weather_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 44, 44, 40));
+  // text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
+  // text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   // if (CONFIG_INVERTED){
-  //   text_layer_set_text_color(s_temperature_layer, GColorBlack);
+  //   text_layer_set_text_color(s_weather_layer, GColorBlack);
   // }else{
-  //   text_layer_set_text_color(s_temperature_layer, GColorWhite);
+  //   text_layer_set_text_color(s_weather_layer, GColorWhite);
   // }  
-  // text_layer_set_background_color(s_temperature_layer, GColorClear);
+  // text_layer_set_background_color(s_weather_layer, GColorClear);
 
 
 // TODO: Change sizes
@@ -1260,7 +1263,7 @@ static void window_load(Window *window) {
   text_layer_set_text(s_weekday_layer, s_weekday_buffer);
   text_layer_set_text(s_day_in_month_layer, s_day_in_month_buffer);
   text_layer_set_text(s_month_layer, s_month_buffer);
- // text_layer_set_text(s_temperature_layer, "...");  
+ // text_layer_set_text(s_weather_layer, "...");  
   layer_add_child(window_layer, s_background_layer);
 
   layer_add_child(window_layer, text_layer_get_layer(s_12_hour_layer));
@@ -1282,11 +1285,11 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, s_battery_layer);
   layer_add_child(window_layer, s_health_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_connection_layer));
-  layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
 
 
   //layer_add_child(window_layer, text_layer_get_layer(s_digital_time_layer));
-  //layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
+  //layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
   layer_add_child(window_layer, s_canvas_layer);
   
 
@@ -1330,7 +1333,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_battery_layer);
   layer_destroy(s_health_layer);
   text_layer_destroy(s_connection_layer);
-  text_layer_destroy(s_temperature_layer);
+  text_layer_destroy(s_weather_layer);
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
   gpath_destroy(s_hour_hand_path_bold_ptr);
@@ -1345,8 +1348,47 @@ static void window_unload(Window *window) {
 
   connection_service_unsubscribe();
   generic_weather_deinit();
+  kiezelpay_deinit();
  
 
+}
+
+
+static bool kiezelpay_event_callback(kiezelpay_event e, void* extra_data) {
+  switch (e) {
+    case KIEZELPAY_ERROR:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_ERROR");
+      break;
+    case KIEZELPAY_BLUETOOTH_UNAVAILABLE:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_BLUETOOTH_UNAVAILABLE");
+      break;
+    case KIEZELPAY_INTERNET_UNAVAILABLE:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_INTERNET_UNAVAILABLE");
+      break;
+#if KIEZELPAY_DISABLE_TIME_TRIAL == 0
+    case KIEZELPAY_TRIAL_STARTED:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_TRIAL_STARTED");
+      break;
+#endif
+    case KIEZELPAY_TRIAL_ENDED:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_TRIAL_ENDED");
+      break;
+    case KIEZELPAY_CODE_AVAILABLE:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_CODE_AVAILABLE");
+      break;
+    case KIEZELPAY_PURCHASE_STARTED:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_PURCHASE_STARTED");
+      break;
+    case KIEZELPAY_LICENSED:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(): KIEZELPAY_LICENSED");
+      break;
+    default:
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "kiezelpay_event_callback(); unknown event");
+      break;
+  };
+  
+  //return true;   //prevent the kiezelpay lib from showing messages by signaling it that we handled the event ourselves
+  return false;    //let the kiezelpay lib handle the event
 }
 
 static void health_handler(HealthEventType event, void *context) {
@@ -1831,6 +1873,9 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
 static void init() {
   if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter init");
+  kiezelpay_set_event_handler(kiezelpay_event_callback);
+ 
+  kiezelpay_init();
   read_configuration();
   //tick_timer_service_subscribe(config.enableSeconds ? SECOND_UNIT : MINUTE_UNIT, tick_handler);
   
@@ -1887,6 +1932,7 @@ events_app_message_open();
 
 static void deinit() {
    window_destroy(s_main_window);
+
 }
 
 int main(void) {

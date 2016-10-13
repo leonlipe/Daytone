@@ -1,5 +1,5 @@
 {
-  "name": "analogyii",
+  "name": "daytone",
   "author": "Leon Felipe",
   "version": "1.0.0",
   "keywords": [
@@ -10,14 +10,15 @@
     "pebble-clay": "^1.0.2",
     "pebble-events": "^1.1.0",
     "pebble-generic-weather": "^1.1.5",
-    "pebble-owm-weather": "^1.0.0"
+    "pebble-owm-weather": "^1.0.0",
+    "kiezelpay-core": "^2.0.10"
   },
   "capabilities": [
     "health",
     "configurable"
   ],
   "pebble": {
-    "displayName": "Analogy II",
+    "displayName": "DayTone",
     "uuid": "54be73a4-1a8f-4d56-93db-a75deaa88c86",
     "sdkVersion": "3",
     "enableMultiJS": true,
