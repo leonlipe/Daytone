@@ -12,11 +12,7 @@
     "pebble-generic-weather": "^1.1.5",
     "pebble-owm-weather": "^1.0.0",
     "kiezelpay-core": "^2.0.10"
-  },
-  "capabilities": [
-    "health",
-    "configurable"
-  ],
+  },  
   "pebble": {
     "displayName": "DayTone",
     "uuid": "54be73a4-1a8f-4d56-93db-a75deaa88c86",
@@ -24,6 +20,10 @@
     "enableMultiJS": true,
     "targetPlatforms": [
       "basalt"
+    ],
+    "capabilities": [
+      "health",
+      "configurable"
     ],
     "watchapp": {
       "watchface": true
@@ -67,7 +67,13 @@
       "lastWeather"
     ],
     "resources": {
-      "media": [        
+      "media": [
+       {
+          "menuIcon": true,
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "images/icon.png"
+        }        
       ]
     }
   }
