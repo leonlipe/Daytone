@@ -1259,7 +1259,7 @@ static void window_load(Window *window) {
   }
   text_layer_set_text_alignment(s_weekday_layer, GTextAlignmentCenter);
   text_layer_set_font(s_weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weekday_layer, GColorClear);
 
 // DIA DE LA SEMANA
@@ -1270,7 +1270,7 @@ static void window_load(Window *window) {
   }
   text_layer_set_text_alignment(s_weekday_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_weekday_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_weekday_layer_popup, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_text_color(s_weekday_layer_popup, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weekday_layer_popup, GColorClear);
  
   // MES
@@ -1281,7 +1281,7 @@ static void window_load(Window *window) {
   }
   text_layer_set_text_alignment(s_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_month_layer, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_month_layer, GColorFromHEX(config.dayInMonthcolor)); 
   text_layer_set_background_color(s_month_layer, GColorClear);
 
   if (SHOWINFOCIRCLES){
@@ -1291,7 +1291,7 @@ static void window_load(Window *window) {
   }
   text_layer_set_text_alignment(s_month_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_month_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_month_layer_popup, GColorFromHEX(config.infoCirclesColor)); 
+  text_layer_set_text_color(s_month_layer_popup, GColorFromHEX(config.dayInMonthcolor)); 
   text_layer_set_background_color(s_month_layer_popup, GColorClear);
 
   // DIGITAL TIME
@@ -1390,14 +1390,14 @@ static void window_load(Window *window) {
   s_weather_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_weather_layer, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_text_color(s_weather_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weather_layer, GColorClear);
   text_layer_set_text(s_weather_layer, s_temp_buffer);
 
   s_weather_layer_popup = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
   text_layer_set_text_alignment(s_weather_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_weather_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_color(s_weather_layer_popup, GColorFromHEX(config.infoCirclesColor));
+  text_layer_set_text_color(s_weather_layer_popup, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weather_layer_popup, GColorClear);
   text_layer_set_text(s_weather_layer_popup, s_temp_buffer);
 

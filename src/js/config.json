@@ -242,7 +242,7 @@
       "type": "color",
       "messageKey": "dayInMonthcolor",
       "defaultValue": "AAAAAA",
-      "label": "Day of the month color",
+      "label": "Infocircles text color",
       "sunlight": true      
     }
 
