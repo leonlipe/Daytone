@@ -1,5 +1,5 @@
 /* === KIEZELPAY === SET TO false BEFORE RELEASING === */
-var KIEZELPAY_LOGGING = true;
+var KIEZELPAY_LOGGING = false;
 /* === KIEZELPAY === SET TO false BEFORE RELEASING === */
 
 /* initiate KiezelPay functionality */

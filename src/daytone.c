@@ -75,7 +75,7 @@
 #define CONFIG_INFOLEFT_HAND_INVERSED false
 #define CONFIG_INFORIGHT_HAND_INVERSED false
 
-#define DEBUG true
+#define DEBUG false
 
 
 #define HOUR_MARKERS_COLOR GColorLightGray
@@ -92,7 +92,7 @@
 #define SUBSCRIBE_TO_BATTERY true
 #define SUBSCRIBE_TO_HEALTH true
 #define SHOWINFOCIRCLES true
-#define SECONDS_FOR_POPUP 2000
+#define SECONDS_FOR_POPUP 3000
 
 //static GFont s_connection_icons_18;
 

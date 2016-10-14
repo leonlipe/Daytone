@@ -67,12 +67,7 @@
       "lastWeather"
     ],
     "resources": {
-      "media": [
-        {
-          "type": "font",
-          "name": "FONT_CONNECTION_ICONS_18",
-          "file": "fonts/conn-icons.ttf"
-        }
+      "media": [        
       ]
     }
   }
