@@ -125,6 +125,9 @@ static TextLayer *s_weekday_layer_popup, *s_day_in_month_layer_popup, *s_month_l
 static Layer *s_background_layer, *s_connection_layer;
 //static GBitmap *s_background_bitmap;
 
+// Variable for knowing if a tap event has benn raised
+static bool is_taped;
+
 //static temp_vals[];
 static char s_temp_buffer[10];
 
@@ -214,20 +217,39 @@ static void hide_popup_callback(void *data){
   layer_set_hidden(text_layer_get_layer(s_month_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
+  is_taped = false;
 }
 
+
+/**
+ * El handler del accel event
+ * @param axis      [description]
+ * @param direction [description]
+ */
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
-  layer_set_hidden(s_popup_layer, false);
-  layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), false);
-  layer_set_hidden(text_layer_get_layer(s_month_layer_popup), false);
-  layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), false);
-  layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), false);  
-  app_timer_register(SECONDS_FOR_POPUP,hide_popup_callback,NULL);
+  GRect full_bounds = layer_get_bounds(s_window_layer);
+  GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
+  if (grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+    if (is_taped){
+      hide_popup_callback(NULL);
+    }else{
+      is_taped = true;
+      layer_set_hidden(s_popup_layer, false);
+      layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), false);
+      layer_set_hidden(text_layer_get_layer(s_month_layer_popup), false);
+      layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), false);
+      layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), false);  
+      app_timer_register(SECONDS_FOR_POPUP,hide_popup_callback,NULL);
+    }
+  }
 }
 
 
 
-
+/**
+ * Handle de la batería
+ * @param charge_state [description]
+ */
 static void handle_battery(BatteryChargeState charge_state) {
   s_last_battery.charge_percent = charge_state.charge_percent;
   s_last_battery.is_charging = charge_state.is_charging;
@@ -391,16 +413,16 @@ static void change_layers(bool value){
     layer_set_hidden(text_layer_get_layer(s_day_in_month_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weekday_layer), value);
     layer_set_hidden(text_layer_get_layer(s_weather_layer), value);
-    layer_set_hidden(text_layer_get_layer(s_month_layer_popup), value);
-    layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), value);
-    layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), value);
-    layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), value);
 
 
 }
 
-static void prv_unobstructed_will_change(GRect final_unobstructed_screen_area,
-void *context) {
+/**
+ * Se dispara cuando va a cambiar el area obstruida
+ * @param final_unobstructed_screen_area [description]
+ * @param context                        [description]
+ */
+static void prv_unobstructed_will_change(GRect final_unobstructed_screen_area, void *context) {
   // Get the full size of the screen
   GRect full_bounds = layer_get_bounds(s_window_layer);
   if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
@@ -409,6 +431,10 @@ void *context) {
   }
 }
 
+/**
+ * Se dispara cuando cambió el area obstruida
+ * @param context [description]
+ */
 static void prv_unobstructed_did_change(void *context) {
   // Get the full size of the screen
   GRect full_bounds = layer_get_bounds(s_window_layer);
@@ -447,7 +473,7 @@ static void popup_layer_update_proc(Layer *layer, GContext *ctx) {
     
       if (config.enableInfoBottom){
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
-        graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
+        graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
         graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE+3);
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.secondsBackColor));
         graphics_fill_circle(ctx, center_seconds,CONFIG_RADIUS_SECS_CIRCLE-1);
@@ -507,15 +533,15 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
      }
 
     
-      if (DEBUG)
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Health Val: %d",health_steps_today );
+    if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Health Val: %d",health_steps_today );
 
       graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
-    }else{
+  }//else{
       //TODO:Color
-      graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
-      graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));
-    }
+    //  graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+    //  graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));
+    //}
     GRect full_bounds = layer_get_bounds(s_window_layer);
     GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
     if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
@@ -536,20 +562,20 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
 // Dibujar el circulo que servirá para la bateria
   if (config.enableBattery && config.enableInfoLeft){
   //if(s_last_battery.charge_percent >= 30){
-  graphics_context_set_fill_color(ctx, GColorFromHEX(config.batteryCircleColor));
+    graphics_context_set_fill_color(ctx, GColorFromHEX(config.batteryCircleColor));
   // }else if(s_last_battery.charge_percent < 30 && s_last_battery.charge_percent >= 20){
   //   graphics_context_set_fill_color(ctx, GColorYellow);
   // }else{
   //    graphics_context_set_fill_color(ctx, GColorRed);
 
   // } 
-  if (DEBUG)
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Battery Val: %i", 36 * s_last_battery.charge_percent);
+    if (DEBUG)
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Battery Val: %i", 36 * s_last_battery.charge_percent);
     graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
-  }else{
-    graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
-    graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));
-  }
+  }//else{
+    //graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
+    //graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));
+  //}
 //  graphics_fill_radial(ctx, GRect(24, 30, 37, 37), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
   GRect full_bounds = layer_get_bounds(s_window_layer);
   GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
@@ -1165,7 +1191,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits changed) {
 
 
 static void window_load(Window *window) {
-  
+  is_taped = false;
  // s_connection_icons_18 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CONNECTION_ICONS_18));
 
   window_set_background_color(s_main_window, GColorFromHEX(config.backgroundcolor));
@@ -1452,7 +1478,6 @@ static void window_load(Window *window) {
   layer_set_hidden(text_layer_get_layer(s_month_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
-  layer_set_hidden(s_connection_layer, true);
    s_hour_hand_path_bold_ptr = gpath_create(&HOUR_HAND_PATH_BOLD);
    s_minute_hand_path_bold_ptr = gpath_create(&MINUTE_HAND_PATH_BOLD);
    s_hour_hand_path_ptr = gpath_create(&HOUR_HAND_PATH);
@@ -1463,6 +1488,10 @@ static void window_load(Window *window) {
   gpath_move_to(s_minute_hand_path_bold_ptr, center);
   gpath_move_to(s_hour_hand_path_ptr, center);
   gpath_move_to(s_minute_hand_path_ptr, center);
+
+  if (connection_service_peek_pebble_app_connection()){
+      layer_set_hidden(s_connection_layer, true);
+  }
 
 }
 
