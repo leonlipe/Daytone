@@ -211,6 +211,8 @@ char weatherApi[50];
 static Battery s_last_battery;
 static Configuration config;
 
+static GenericWeatherStatus weather_last_status;
+
 static void hide_popup_callback(void *data){
   layer_set_hidden(s_popup_layer, true);
   layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
@@ -776,8 +778,8 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
           };
 
           GPoint point02 = (GPoint) {
-            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.x,
-            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * 75 / TRIG_MAX_RATIO) + center.y,
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * 70 / TRIG_MAX_RATIO) + center.x,
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * 70 / TRIG_MAX_RATIO) + center.y,
           };
 
          
@@ -1085,9 +1087,12 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 }
 
 static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus status){
+  if (DEBUG)
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "API:%s",weatherApi);
   switch(status) {
     case GenericWeatherStatusAvailable:
     {
+      weather_last_status = GenericWeatherStatusAvailable;  
       if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather units config: %d",config.weatherUnits);
       if (config.weatherUnits == 0){
@@ -1101,33 +1106,45 @@ static void weather_callback(GenericWeatherInfo *info, GenericWeatherStatus stat
     }
       break;
     case GenericWeatherStatusNotYetFetched:
+    weather_last_status = GenericWeatherStatusNotYetFetched;  
       if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusNotYetFetched");
+      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusNotYetFetched");
       break;
     case GenericWeatherStatusBluetoothDisconnected:
+    weather_last_status = GenericWeatherStatusBluetoothDisconnected;  
     if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusBluetoothDisconnected");
+      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","blu");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusBluetoothDisconnected");
       break;
     case GenericWeatherStatusPending:
+    weather_last_status = GenericWeatherStatusPending;  
     if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusPending");
+      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","...");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusPending");
       break;
     case GenericWeatherStatusFailed:
+    weather_last_status = GenericWeatherStatusFailed;  
     if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusFailed");
+      snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","fa");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusFailed");
       break;
     case GenericWeatherStatusBadKey:
+    weather_last_status = GenericWeatherStatusBadKey;  
     if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusBadKey");
+        snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","api");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusBadKey");
       break;
     case GenericWeatherStatusLocationUnavailable:
+    weather_last_status = GenericWeatherStatusLocationUnavailable;  
     if (DEBUG)
         APP_LOG(APP_LOG_LEVEL_DEBUG, "GenericWeatherStatusLocationUnavailable");
+        snprintf(s_temp_buffer, sizeof(s_temp_buffer),"%s","loc");
       //text_layer_set_text(s_text_layer, "GenericWeatherStatusLocationUnavailable");
       break;
   }
@@ -1143,8 +1160,14 @@ static void update_weather(unsigned int now){
   }
   if (DEBUG)
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter update_weather, enableWeather:%d",config.enableWeather);  
+  unsigned int now_int_the_future;
+  if (weather_last_status == GenericWeatherStatusAvailable){
+    now_int_the_future = last_time_weather + (config.weatherMinutes * 60);
+  }else{
+    now_int_the_future = last_time_weather + 60;
+  }
   if(config.enableWeather){
-      if (now > last_time_weather + (config.weatherMinutes * 60) ){
+      if (  now >  now_int_the_future ){
         if (DEBUG)
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Calling weather");
         last_time_weather = now;
@@ -1499,6 +1522,7 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
   persist_write_int(MESSAGE_KEY_lastTimeWeather,last_time_weather);
   persist_write_string(MESSAGE_KEY_lastWeather, s_temp_buffer);
+  persist_write_int(MESSAGE_KEY_weatherLastStatus, weather_last_status);  
   layer_destroy(s_background_layer);
   layer_destroy(s_bg_layer);
   layer_destroy(s_canvas_layer);
@@ -1818,6 +1842,12 @@ static void read_configuration(){
     config.weatherMinutes = 60;
   }
 
+  if (persist_exists(MESSAGE_KEY_weatherLastStatus)){
+    weather_last_status = persist_read_int(MESSAGE_KEY_weatherLastStatus);
+  }else{
+    weather_last_status = GenericWeatherStatusPending;
+  }
+
   if (persist_exists(MESSAGE_KEY_weatherApi)){
     persist_read_string(MESSAGE_KEY_weatherApi, weatherApi, sizeof(weatherApi));
   }else{
@@ -1864,6 +1894,9 @@ static void read_configuration(){
      APP_LOG(APP_LOG_LEVEL_DEBUG, "infoLeftBackColor: %d",config.infoLeftBackColor);
      APP_LOG(APP_LOG_LEVEL_DEBUG, "dailyStepsGoal: %d",config.dailyStepsGoal);
      APP_LOG(APP_LOG_LEVEL_DEBUG, "Last time weather: %u",last_time_weather);
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherProvider: %d",config.weatherProvider);
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Last weather status: %d",weather_last_status);
+
    }
 
 }
@@ -1874,27 +1907,7 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter prv_inbox_received_handler");
   bool configuration_updated = false;  
-  // // Read color preferences
-  // Tuple *bg_color_t = dict_find(iter, MESSAGE_KEY_BackgroundColor);
-  // if(bg_color_t) {
-  //   GColor bg_color = GColorFromHEX(bg_color_t->value->int32);
-  // }
-
-  // Tuple *fg_color_t = dict_find(iter, MESSAGE_KEY_ForegroundColor);
-  // if(fg_color_t) {
-  //   GColor fg_color = GColorFromHEX(fg_color_t->value->int32);
-  // }
-
-  // // Read boolean preferences
-  // Tuple *second_tick_t = dict_find(iter, MESSAGE_KEY_SecondTick);
-  // if(second_tick_t) {
-  //   bool second_ticks = second_tick_t->value->int32 == 1;
-  // }
-
-  // Tuple *animations_t = dict_find(iter, MESSAGE_KEY_Animations);
-  // if(animations_t) {
-  //   bool animations = animations_t->value->int32 == 1;
-  // }
+  
   Tuple *configOption = dict_find(iter, MESSAGE_KEY_enableSeconds);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableSeconds,configOption->value->int32 == 1);
@@ -2015,7 +2028,11 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   }
    configOption = dict_find(iter, MESSAGE_KEY_weatherProvider);
   if(configOption){
-    persist_write_int(MESSAGE_KEY_weatherProvider,configOption->value->int32);
+    if(DEBUG){
+     // APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherProvider API value: %il",configOption->value->int32);      
+       APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherProvider API value: %i",configOption->value->cstring[0]-'0');      
+    }
+    persist_write_int(MESSAGE_KEY_weatherProvider,configOption->value->cstring[0]-'0');
     configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableWeather);
@@ -2027,7 +2044,7 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   configOption = dict_find(iter, MESSAGE_KEY_weatherApi);
   if(configOption){
      if (DEBUG)
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Value %s",configOption->value->cstring);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherApi config value: %s",configOption->value->cstring);
     persist_write_string(MESSAGE_KEY_weatherApi,configOption->value->cstring);
     configuration_updated = true;
   }
@@ -2058,6 +2075,8 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   if (configuration_updated){
     read_configuration();
     last_time_weather = 0;
+    generic_weather_set_provider(GenericWeatherProviderWeatherUnderground);
+    generic_weather_set_api_key(weatherApi);
     refreshAllLayers();
   }
 }
