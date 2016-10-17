@@ -75,7 +75,6 @@
 #define CONFIG_INFOLEFT_HAND_INVERSED false
 #define CONFIG_INFORIGHT_HAND_INVERSED false
 
-#define DEBUG false
 
 
 #define HOUR_MARKERS_COLOR GColorLightGray
@@ -93,6 +92,9 @@
 #define SUBSCRIBE_TO_HEALTH true
 #define SHOWINFOCIRCLES true
 #define SECONDS_FOR_POPUP 3000
+
+#define DEBUG false
+
 
 //static GFont s_connection_icons_18;
 
@@ -2075,7 +2077,7 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   if (configuration_updated){
     read_configuration();
     last_time_weather = 0;
-    generic_weather_set_provider(GenericWeatherProviderWeatherUnderground);
+    generic_weather_set_provider(config.weatherProvider);
     generic_weather_set_api_key(weatherApi);
     refreshAllLayers();
   }
