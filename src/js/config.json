@@ -53,6 +53,11 @@
       "type": "toggle",
       "messageKey": "enableMinutesMarks",
       "label": "Enable minutes markers"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "enableShake",
+      "label": "Enable tap event" 
     }
 
 

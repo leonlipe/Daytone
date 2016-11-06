@@ -206,6 +206,7 @@ typedef struct {
  int weatherProvider;
  int weatherUnits;
  int weatherMinutes;
+ int enableShake;
 
 } Configuration;
 
@@ -233,17 +234,19 @@ static void hide_popup_callback(void *data){
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   GRect full_bounds = layer_get_bounds(s_window_layer);
   GRect final_unobstructed_screen_area = layer_get_unobstructed_bounds(s_window_layer);
-  if (grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
-    if (is_taped){
-      hide_popup_callback(NULL);
-    }else{
-      is_taped = true;
-      layer_set_hidden(s_popup_layer, false);
-      layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), false);
-      layer_set_hidden(text_layer_get_layer(s_month_layer_popup), false);
-      layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), false);
-      layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), false);  
-      app_timer_register(SECONDS_FOR_POPUP,hide_popup_callback,NULL);
+  if (config.enableShake){
+    if (grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+      if (is_taped){
+        hide_popup_callback(NULL);
+      }else{
+        is_taped = true;
+        layer_set_hidden(s_popup_layer, false);
+        layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), false);
+        layer_set_hidden(text_layer_get_layer(s_month_layer_popup), false);
+        layer_set_hidden(text_layer_get_layer(s_weather_layer_popup), false);
+        layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), false);  
+        app_timer_register(SECONDS_FOR_POPUP,hide_popup_callback,NULL);
+      }
     }
   }
 }
@@ -1666,6 +1669,13 @@ void health_init() {
 static void read_configuration(){
   if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter read_configuration");
+
+  if (persist_exists(MESSAGE_KEY_enableShake)){
+    config.enableShake = persist_read_bool(MESSAGE_KEY_enableShake);
+  }else{
+    config.enableShake = true;
+  }
+    
   if (persist_exists(MESSAGE_KEY_enableSeconds)){
     config.enableSeconds = persist_read_bool(MESSAGE_KEY_enableSeconds);
   }else{
@@ -1913,6 +1923,11 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   Tuple *configOption = dict_find(iter, MESSAGE_KEY_enableSeconds);
   if(configOption){
     persist_write_bool(MESSAGE_KEY_enableSeconds,configOption->value->int32 == 1);
+    configuration_updated = true;
+  }
+  configOption = dict_find(iter, MESSAGE_KEY_enableShake);
+  if(configOption){
+    persist_write_bool(MESSAGE_KEY_enableShake,configOption->value->int32 == 1);
     configuration_updated = true;
   }
   configOption = dict_find(iter, MESSAGE_KEY_enableInfoBottom);
