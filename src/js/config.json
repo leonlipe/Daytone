@@ -156,7 +156,7 @@
       "type": "color",
       "messageKey": "backgroundcolor",
       "defaultValue": "000000",
-      "label": "Background Color",
+      "label": "Background Color",      
       "sunlight": true      
     },
     {
@@ -164,6 +164,7 @@
       "messageKey": "hourHandsColor",
       "defaultValue": "AAAAAA",
       "label": "Hour Hands Color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -171,6 +172,7 @@
       "messageKey": "minuteHandsColor",
       "defaultValue": "FFFFFF",
       "label": "Minute Hands Color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -206,6 +208,7 @@
       "messageKey": "batteryCircleColor",
       "defaultValue": "00AAFF",
       "label": "Battery indicator Color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -213,6 +216,7 @@
       "messageKey": "healthCircleColor",
       "defaultValue": "00AAFF",
       "label": "Health indicator Color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -220,6 +224,7 @@
       "messageKey": "infoCirclesColor",
       "defaultValue": "FFFFFF",
       "label": "Information circles & seconds circle outline Color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -227,6 +232,7 @@
       "messageKey": "infoLeftBackColor",
       "defaultValue": "000000",
       "label": "Left information circle background color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -234,6 +240,7 @@
       "messageKey": "infoRightBackColor",
       "defaultValue": "000000",
       "label": "Right information circle background color",
+      "allowGray": true,
       "sunlight": true      
     },
     {
@@ -241,6 +248,7 @@
       "messageKey": "secondsBackColor",
       "defaultValue": "000000",
       "label": "Seconds background color",
+      "allowGray": true,
       "sunlight": true      
     },
     {

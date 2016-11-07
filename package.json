@@ -18,7 +18,8 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "basalt"
+      "basalt",
+      "diorite"
     ],
     "capabilities": [
       "health",
