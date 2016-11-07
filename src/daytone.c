@@ -1,13 +1,12 @@
 #include <pebble.h>
+#if defined(PBL_HEALTH)
 #include "health.h"
+#endif
 #include <pebble-generic-weather/pebble-generic-weather.h>
 #include <pebble-events/pebble-events.h>
 #include <kiezelpay-core/kiezelpay.h>
 
 
-#define CONFIG_INVERTED 0
-//#define CONFIG_CENTER_SECONDS_X 72
-//#define CONFIG_CENTER_SECONDS_Y 120
 #define SECONDS_CENTER_OFFSET_X 30 // 30
 #define SECONDS_CENTER_OFFSET_Y 36 // 36
 #define CONFIG_HAND_LENGTH_SEC 22
@@ -95,13 +94,6 @@
 
 #define DEBUG false
 
-
-//static GFont s_connection_icons_18;
-
-// Message sizes
-const uint32_t inbox_size = 64;
-const uint32_t outbox_size = 256;
-
 typedef struct {
   int days;
   int hours;
@@ -120,7 +112,10 @@ static unsigned int last_time_weather;
  
 
 static Window *s_main_window;
-static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer, *s_health_layer, *s_window_layer, *s_popup_layer;
+static Layer *s_bg_layer,  *s_canvas_layer, *s_seconds_layer, *s_battery_layer,  *s_window_layer, *s_popup_layer;
+#if defined(PBL_HEALTH)
+static Layer *s_health_layer;
+#endif
 static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hour_layer, *s_04_hour_layer, *s_05_hour_layer, *s_06_hour_layer, *s_07_hour_layer, *s_08_hour_layer, *s_09_hour_layer, *s_10_hour_layer, *s_11_hour_layer;
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_weather_layer;
 static TextLayer *s_weekday_layer_popup, *s_day_in_month_layer_popup, *s_month_layer_popup, *s_weather_layer_popup;
@@ -357,7 +352,9 @@ static void refreshAllLayers(){
   layer_mark_dirty(s_background_layer);
   layer_mark_dirty(s_battery_layer);
   layer_mark_dirty(s_bg_layer);
+  #if defined(PBL_HEALTH)
   layer_mark_dirty(s_health_layer);
+  #endif
   layer_mark_dirty(s_seconds_layer);
   layer_mark_dirty(s_canvas_layer);
 
@@ -400,7 +397,9 @@ static void kit_connection_handler(bool connected) {
 static void change_layers(bool value){
     layer_set_hidden(s_background_layer, value);
     layer_set_hidden(s_battery_layer, value);
+    #if defined(PBL_HEALTH)
     layer_set_hidden(s_health_layer, value);
+    #endif
     layer_set_hidden(s_bg_layer, value);
     layer_set_hidden(s_seconds_layer, value);
     //layer_set_hidden(s_popup_layer, value);
@@ -424,6 +423,8 @@ static void change_layers(bool value){
 
 }
 
+
+#if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
 /**
  * Se dispara cuando va a cambiar el area obstruida
  * @param final_unobstructed_screen_area [description]
@@ -452,6 +453,7 @@ static void prv_unobstructed_did_change(void *context) {
     change_layers(false);
   }
 }
+#endif
 
 /**
  * Update popuplayer with the apropiate shapes
@@ -526,6 +528,7 @@ static void popup_layer_update_proc(Layer *layer, GContext *ctx) {
 /*
   Procedimiento que dibuja el circulo de Pebble Health
  */
+#if defined(PBL_HEALTH)
 
 static void health_layer_update(Layer *layer, GContext *ctx) {
  
@@ -558,6 +561,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
     }
 
 }
+#endif
 
 /* 
   Procedimiento que dibuja el circulo de la bateria
@@ -1227,11 +1231,14 @@ static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   s_window_layer = window_layer;
 
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
    UnobstructedAreaHandlers handlers = {
     .will_change = prv_unobstructed_will_change,
     .did_change = prv_unobstructed_did_change
   };
   unobstructed_area_service_subscribe(handlers, NULL);
+  #endif
+  
 
 
   GRect bounds = layer_get_bounds(window_layer);
@@ -1261,9 +1268,10 @@ static void window_load(Window *window) {
 
   s_battery_layer = layer_create(bounds);
   layer_set_update_proc(s_battery_layer, battery_layer_update);
+  #if defined(PBL_HEALTH)
   s_health_layer = layer_create(bounds);
   layer_set_update_proc(s_health_layer, health_layer_update);
-
+  #endif
  
  // DIA DEL MES
   s_day_in_month_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
@@ -1437,21 +1445,9 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_connection_layer, bg_update_connection_proc);
   layer_set_update_proc(s_popup_layer, popup_layer_update_proc);
 
-  // s_weather_layer = text_layer_create(GRect(CONFIG_X_START_INFO_BOX, 44, 44, 40));
-  // text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
-  // text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
-  // if (CONFIG_INVERTED){
-  //   text_layer_set_text_color(s_weather_layer, GColorBlack);
-  // }else{
-  //   text_layer_set_text_color(s_weather_layer, GColorWhite);
-  // }  
-  // text_layer_set_background_color(s_weather_layer, GColorClear);
+  
 
-
-// TODO: Change sizes
   s_background_layer = layer_create(bounds);
- // bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
- // bitmap_layer_set_compositing_mode(s_background_layer, GCompOpSet);
 
   s_canvas_layer = layer_create(bounds);
   layer_set_update_proc(s_canvas_layer, draw_proc);
@@ -1486,7 +1482,9 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_weekday_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_month_layer));
   layer_add_child(window_layer, s_battery_layer);
+  #if defined(PBL_HEALTH)
   layer_add_child(window_layer, s_health_layer);
+  #endif
   layer_add_child(window_layer, s_connection_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
 
@@ -1549,7 +1547,9 @@ static void window_unload(Window *window) {
   text_layer_destroy(s_11_hour_layer);
   layer_destroy(s_seconds_layer);
   layer_destroy(s_battery_layer);
+  #if defined(PBL_HEALTH)
   layer_destroy(s_health_layer);
+  #endif
   layer_destroy(s_connection_layer);
   layer_destroy(s_popup_layer);
   text_layer_destroy(s_weather_layer);
@@ -1566,8 +1566,11 @@ static void window_unload(Window *window) {
   tick_timer_service_unsubscribe();
   if (config.enableBattery)
     battery_state_service_unsubscribe();
+
+  #if defined(PBL_HEALTH)
   if (config.enableHealth)
     health_service_events_unsubscribe();
+  #endif
 
   accel_tap_service_unsubscribe();
 
@@ -1616,6 +1619,8 @@ static bool kiezelpay_event_callback(kiezelpay_event e, void* extra_data) {
   return false;    //let the kiezelpay lib handle the event
 }
 
+#if defined(PBL_HEALTH)
+
 static void health_handler(HealthEventType event, void *context) {
   // Which type of event occurred?
   switch(event) {
@@ -1650,7 +1655,9 @@ static void health_handler(HealthEventType event, void *context) {
       break;
   }
 }
+#endif
 
+#if defined(PBL_HEALTH)
 
 void health_init() {
     #if defined(PBL_HEALTH)
@@ -1663,7 +1670,7 @@ void health_init() {
     #endif
       
 }
-
+#endif
 
 
 static void read_configuration(){
@@ -1881,7 +1888,7 @@ static void read_configuration(){
     //layer_set_hidden(s_battery_layer, true);
   }
 
- 
+   #if defined(PBL_HEALTH)
   // Inicializa el servicio de Salud
   if (config.enableHealth && config.enableInfoRight){
     health_init();
@@ -1891,6 +1898,7 @@ static void read_configuration(){
     //layer_set_hidden(s_health_layer, false);
 
    } 
+   #endif
 
    if(config.enableConnection){
        connection_service_subscribe((ConnectionHandlers) {
@@ -2105,17 +2113,19 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
 static void init() {
   if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter init");
+
+  /** Start: Kiezel Pay init code */
   kiezelpay_set_event_handler(kiezelpay_event_callback);
- 
   kiezelpay_init();
+  /** End: Kiezel Pay init code */
+
+  // Read configuration on initialization
   read_configuration();
-  //tick_timer_service_subscribe(config.enableSeconds ? SECOND_UNIT : MINUTE_UNIT, tick_handler);
-  
 
-
-  
+  // Create the main window
   s_main_window = window_create();
- // s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BACKGROUND_BW_IMAGE);
+
+  /** Generic weather initialization code */
   generic_weather_init();
   generic_weather_set_provider(GenericWeatherProviderWeatherUnderground);
   generic_weather_set_api_key(weatherApi);
@@ -2138,26 +2148,13 @@ static void init() {
   time_t t = time(NULL);
   struct tm *tm_now = localtime(&t);
   tick_handler(tm_now, SECOND_UNIT);
-    if (SUBSCRIBE_TO_BATTERY)
-
-handle_battery(battery_state_service_peek());
+if (SUBSCRIBE_TO_BATTERY){
+  handle_battery(battery_state_service_peek());
+}
 events_app_message_request_inbox_size(1024);
 events_app_message_request_outbox_size(1024);
 events_app_message_register_inbox_received(prv_inbox_received_handler,NULL);
 events_app_message_open();
-  
-  //app_message_open(256, 256);
-
-
-
-  // Communications initialization
-  // app_message_open(inbox_size, outbox_size);
-  // app_message_register_inbox_received(inbox_received_callback);
-  // app_message_register_inbox_dropped(inbox_dropped_callback);
-  // app_message_register_outbox_sent(outbox_sent_callback);
-  // app_message_register_outbox_failed(outbox_failed_callback);
-
-
    
 }
 

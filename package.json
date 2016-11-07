@@ -19,7 +19,8 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "basalt"
+      "basalt",
+      "aplite"
     ],
     "capabilities": [
       "health",
