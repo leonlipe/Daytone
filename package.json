@@ -10,7 +10,6 @@
     "pebble-clay": "^1.0.2",
     "pebble-events": "^1.1.0",
     "pebble-generic-weather": "^1.1.5",
-    "pebble-owm-weather": "^1.0.0",
     "kiezelpay-core": "^2.0.10"
   },  
   "pebble": {
@@ -19,8 +18,7 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "basalt",
-      "aplite"
+      "basalt"
     ],
     "capabilities": [
       "health",

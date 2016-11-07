@@ -1,98 +1,11 @@
 #include <pebble.h>
+#include "daytone.h"
 #if defined(PBL_HEALTH)
 #include "health.h"
 #endif
 #include <pebble-generic-weather/pebble-generic-weather.h>
 #include <pebble-events/pebble-events.h>
 #include <kiezelpay-core/kiezelpay.h>
-
-
-#define SECONDS_CENTER_OFFSET_X 30 // 30
-#define SECONDS_CENTER_OFFSET_Y 36 // 36
-#define CONFIG_HAND_LENGTH_SEC 22
-#define CONFIG_RADIUS_SECS_CIRCLE 23
-#define CONFIG_HAND_LENGTH_HOUR 45
-#define CONFIG_HAND_LENGTH_MIN 65
-#define THICKNESS_MINUTES 4
-#define THICKNESS_HOUR 4
-#define THICKNESSMARKS 5
-#define THICKNESS_SECONDS 2
-
-#define DRAW_PATH_HAND 1
-#define CENTER_HANDS_OFFSET 0
-#define CENTER_HANDS_RADIUS 4
-#define CONFIG_X_START_INFO_BOX 100
-#define PATH_HANDS_INVERSE_LEGTH 15
-
-#define CONFIG_CENTER_INFOLEFT_X 42
-#define CONFIG_CENTER_INFOLEFT_Y 48
-#define CONFIG_RADIUS_INFOLEFT_CIRCLE 23
-#define CONFIG_CENTER_INFORIGHT_X 102
-#define CONFIG_CENTER_INFORIGHT_Y 48
-#define CONFIG_RADIUS_INFORIGHT_CIRCLE 23
-
-#define MESSAGE_KEY_GET_WEATHER 1
-//#define SECONDS_FOR_POLL 3600
-
-#define WEATHER_TEMPERATURE_KEY 1
-#define WEATHER_TEMPERATURE_FORE_KEY 2
-#define SHOW_MINUTES_MARKS 1
-#define SHOW_HOUR_MARKS 1
-#define TIME_NUMERALS_FONT FONT_KEY_LECO_20_BOLD_NUMBERS
-#define XPOS_12H 55
-#define XPOS_01H 95
-#define XPOS_02H 105
-#define XPOS_03H 105
-#define XPOS_04H 105
-#define XPOS_05H 95
-#define XPOS_06H 55
-#define XPOS_07H 15
-#define XPOS_08H 5
-#define XPOS_09H 5
-#define XPOS_10H 5
-#define XPOS_11H 15
-
-#define YPOS_12H 10
-#define YPOS_01H 10
-#define YPOS_02H 40
-#define YPOS_03H 75
-#define YPOS_04H 110
-#define YPOS_05H 135
-#define YPOS_06H 138
-#define YPOS_07H 135
-#define YPOS_08H 110
-#define YPOS_09H 75
-#define YPOS_10H 40
-#define YPOS_11H 10
-
-#define XLENHOURS 40
-#define YLENHOURS 40
-
-#define CIRCLE_SECONDS_AREA true
-
-#define CONFIG_SECONDS_HAND_INVERSED false
-#define CONFIG_INFOLEFT_HAND_INVERSED false
-#define CONFIG_INFORIGHT_HAND_INVERSED false
-
-
-
-#define HOUR_MARKERS_COLOR GColorLightGray
-#define MINUTE_MARKERS_COLOR GColorLightGray
-#define HOUR_HAND_COLOR GColorLightGray
-#define MINUTE_HAND_COLOR GColorWhite
-#define SECONDS_HAND_COLOR  GColorVividCerulean
-#define INFOLEFT_HAND_COLOR  GColorVividCerulean
-#define INFORIGHT_HAND_COLOR GColorVividCerulean
-#define INFOLEFT_CIRCLE_COLOR  GColorVividCerulean
-#define INFORIGHT_CIRCLE_COLOR  GColorVividCerulean
-#define CIRCLES_COLOR  GColorBlack
-
-#define SUBSCRIBE_TO_BATTERY true
-#define SUBSCRIBE_TO_HEALTH true
-#define SHOWINFOCIRCLES true
-#define SECONDS_FOR_POPUP 3000
-
-#define DEBUG false
 
 typedef struct {
   int days;
@@ -120,19 +33,19 @@ static TextLayer *s_12_hour_layer, *s_01_hour_layer, *s_02_hour_layer, *s_03_hou
 static TextLayer *s_weekday_layer, *s_day_in_month_layer, *s_month_layer, *s_digital_time_layer, *s_weather_layer;
 static TextLayer *s_weekday_layer_popup, *s_day_in_month_layer_popup, *s_month_layer_popup, *s_weather_layer_popup;
 static Layer *s_background_layer, *s_connection_layer;
-//static GBitmap *s_background_bitmap;
 
 // Variable for knowing if a tap event has benn raised
 static bool is_taped;
 
-//static temp_vals[];
 static char s_temp_buffer[10];
 
 static Time s_last_time;
-static char s_weekday_buffer[8], s_month_buffer[8], s_day_in_month_buffer[3];
+static char s_weekday_buffer[4], s_month_buffer[4], s_day_in_month_buffer[3];
 //static int s_weekday_number;
+#if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
 
 static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hour_hand_path_bold_ptr = NULL, *s_minute_hand_path_bold_ptr = NULL;
+
 
 static const GPathInfo MINUTE_HAND_PATH = {
   .num_points = 4,
@@ -163,6 +76,7 @@ static const GPathInfo HOUR_HAND_PATH_BOLD = {
                           {4, CONFIG_HAND_LENGTH_HOUR*-1}, 
                           {4, PATH_HANDS_INVERSE_LEGTH}}
 };
+#endif
 
 
 
@@ -206,6 +120,8 @@ typedef struct {
 } Configuration;
 
 char weatherApi[50];
+
+
 static Battery s_last_battery;
 static Configuration config;
 
@@ -219,7 +135,6 @@ static void hide_popup_callback(void *data){
   layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
   is_taped = false;
 }
-
 
 /**
  * El handler del accel event
@@ -320,11 +235,6 @@ static int32_t getMarkSize(int h){
 return resultado;
 }
 
-// static int32_t getMarkSizeForMinutes(int m){
-//   int32_t resultado = 75;
- 
-//   return resultado;
-// }
 
 static void refreshAllLayers(){
   text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.numbersColor));
@@ -841,10 +751,6 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
       
     }
   }
-
-
-
-
 }
 
 
@@ -973,7 +879,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
 
-  if (DRAW_PATH_HAND){
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
     // Move paths depends on the minutes or hours
     if (s_last_time.minutes == 0 ||  s_last_time.minutes == 15 || s_last_time.minutes == 30 || s_last_time.minutes == 45){
       gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(200, 200));
@@ -1016,7 +922,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
 
-  }else{
+  #else
 
     // En caso que no se utilice un path para las manecillas
 
@@ -1067,7 +973,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
       }
     }
     
-  }
+ #endif
 
 
   // CIRCULO DE LAS MANECILLAS CENTRALES
@@ -1504,17 +1410,20 @@ static void window_load(Window *window) {
   layer_set_hidden(text_layer_get_layer(s_month_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
+  
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
+
    s_hour_hand_path_bold_ptr = gpath_create(&HOUR_HAND_PATH_BOLD);
    s_minute_hand_path_bold_ptr = gpath_create(&MINUTE_HAND_PATH_BOLD);
    s_hour_hand_path_ptr = gpath_create(&HOUR_HAND_PATH);
    s_minute_hand_path_ptr = gpath_create(&MINUTE_HAND_PATH);
-  
+
   // Translate by (5, 5):
   gpath_move_to(s_hour_hand_path_bold_ptr, center);
   gpath_move_to(s_minute_hand_path_bold_ptr, center);
   gpath_move_to(s_hour_hand_path_ptr, center);
   gpath_move_to(s_minute_hand_path_ptr, center);
-
+  #endif  
   if (connection_service_peek_pebble_app_connection()){
       layer_set_hidden(s_connection_layer, true);
   }
@@ -1553,10 +1462,12 @@ static void window_unload(Window *window) {
   layer_destroy(s_connection_layer);
   layer_destroy(s_popup_layer);
   text_layer_destroy(s_weather_layer);
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
   gpath_destroy(s_hour_hand_path_bold_ptr);
   gpath_destroy(s_minute_hand_path_bold_ptr);
+  #endif
   text_layer_destroy(s_weather_layer_popup);
   text_layer_destroy(s_weekday_layer_popup);
   text_layer_destroy(s_day_in_month_layer_popup);
@@ -1660,14 +1571,10 @@ static void health_handler(HealthEventType event, void *context) {
 #if defined(PBL_HEALTH)
 
 void health_init() {
-    #if defined(PBL_HEALTH)
     // Attempt to subscribe 
     if(!health_service_events_subscribe(health_handler, NULL)) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
     }
-    #else
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
-    #endif
       
 }
 #endif
@@ -1922,7 +1829,11 @@ static void read_configuration(){
 }
 
 
-
+/**
+ * Function for settings options after web configurator or phone initiated event
+ * @param iter    Params
+ * @param context The context
+ */
 static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Enter prv_inbox_received_handler");
@@ -2054,7 +1965,6 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
    configOption = dict_find(iter, MESSAGE_KEY_weatherProvider);
   if(configOption){
     if(DEBUG){
-     // APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherProvider API value: %il",configOption->value->int32);      
        APP_LOG(APP_LOG_LEVEL_DEBUG, "weatherProvider API value: %i",configOption->value->cstring[0]-'0');      
     }
     persist_write_int(MESSAGE_KEY_weatherProvider,configOption->value->cstring[0]-'0');
@@ -2108,7 +2018,9 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
 
 
 
-
+/**
+ * Initialize the watchface.
+ */
 
 static void init() {
   if (DEBUG)
@@ -2125,46 +2037,63 @@ static void init() {
   // Create the main window
   s_main_window = window_create();
 
-  /** Generic weather initialization code */
+  /** Start: Generic weather initialization code */
   generic_weather_init();
-  generic_weather_set_provider(GenericWeatherProviderWeatherUnderground);
+  generic_weather_set_provider(config.weatherProvider);
   generic_weather_set_api_key(weatherApi);
   generic_weather_set_feels_like(false);
-
+  /** End: Generic weather initialization code */
   
+  // Subscribe to tap events  
   accel_tap_service_subscribe(accel_tap_handler);
 
+  // Subscribe to connection service
   connection_service_subscribe((ConnectionHandlers) {
     .pebble_app_connection_handler = app_connection_handler,
     .pebblekit_connection_handler = kit_connection_handler
   });
   
+  // Set window handlers
   window_set_window_handlers(s_main_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload,
   });
+  // Push main window to stack
   window_stack_push(s_main_window, true);
 
+  // Set the time for the first time
   time_t t = time(NULL);
   struct tm *tm_now = localtime(&t);
   tick_handler(tm_now, SECOND_UNIT);
-if (SUBSCRIBE_TO_BATTERY){
-  handle_battery(battery_state_service_peek());
-}
-events_app_message_request_inbox_size(1024);
-events_app_message_request_outbox_size(1024);
-events_app_message_register_inbox_received(prv_inbox_received_handler,NULL);
-events_app_message_open();
+
+
+  // Battery service
+  if (SUBSCRIBE_TO_BATTERY){
+    handle_battery(battery_state_service_peek());
+  }
+
+  /** Start: Events handlers */
+  events_app_message_request_inbox_size(1024);
+  events_app_message_request_outbox_size(1024);
+  events_app_message_register_inbox_received(prv_inbox_received_handler,NULL);
+  events_app_message_open();
+  /** End: Events handlers */
    
 }
 
 
-
+/**
+ * Destroy main window
+ */
 static void deinit() {
    window_destroy(s_main_window);
 
 }
 
+/**
+ * Main code to run the watchface
+ * @return  default value
+ */
 int main(void) {
   init();
   app_event_loop();
