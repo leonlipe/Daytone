@@ -451,7 +451,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
 // Dibujar el circulo que servirá para la bateria
   if (config.enableHealth && config.enableInfoRight){
     int health_steps_today = health_get_steps_today();
-     //int   health_steps_today = 1000;
+   //  int   health_steps_today = 10000;
 
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.healthCircleColor));
     int steps_goal_percent = 10;
@@ -462,7 +462,7 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
     if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Health Val: %d",health_steps_today );
 
-      graphics_fill_radial(ctx, GRect(center.x+13, center.y-55, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
+      graphics_fill_radial(ctx, GRect(center.x+11, center.y-55, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
   }//else{
       //TODO:Color
     //  graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
