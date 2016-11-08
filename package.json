@@ -19,7 +19,8 @@
     "enableMultiJS": true,
     "targetPlatforms": [
       "basalt",
-      "diorite"
+      "diorite",
+      "chalk"
     ],
     "capabilities": [
       "health",

@@ -42,7 +42,7 @@ static char s_temp_buffer[10];
 static Time s_last_time;
 static char s_weekday_buffer[4], s_month_buffer[4], s_day_in_month_buffer[3];
 //static int s_weekday_number;
-#if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
+#if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_CHALK) 
 
 static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hour_hand_path_bold_ptr = NULL, *s_minute_hand_path_bold_ptr = NULL;
 
@@ -429,9 +429,13 @@ static void popup_layer_update_proc(Layer *layer, GContext *ctx) {
       graphics_context_set_stroke_color(ctx, GColorFromHEX(config.hourMarkersColor));
       graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
     }  
-    graphics_draw_rect(ctx, GRect(64, center_seconds.y+5, 17, 15));  
-    graphics_fill_rect(ctx, GRect(63, center_seconds.y+10, 18,5), 0, GCornersAll);  
-    graphics_fill_rect(ctx, GRect(69, center_seconds.y+5, 6,16), 0, GCornersAll);  
+
+    
+
+    graphics_draw_rect(ctx, GRect(center_seconds.x-8, center_seconds.y+5, 17, 15));  
+    graphics_fill_rect(ctx, GRect(center_seconds.x-9, center_seconds.y+10, 18,5), 0, GCornersAll);  
+    graphics_fill_rect(ctx, GRect(center_seconds.x-3, center_seconds.y+5, 6,16), 0, GCornersAll);  
+
 
 }
 
@@ -441,22 +445,24 @@ static void popup_layer_update_proc(Layer *layer, GContext *ctx) {
 #if defined(PBL_HEALTH)
 
 static void health_layer_update(Layer *layer, GContext *ctx) {
- 
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);  
+  GPoint center = grect_center_point(&unobstructed_bounds);
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
   if (config.enableHealth && config.enableInfoRight){
     int health_steps_today = health_get_steps_today();
+     //int   health_steps_today = 1000;
+
     graphics_context_set_fill_color(ctx, GColorFromHEX(config.healthCircleColor));
     int steps_goal_percent = 10;
     if (health_steps_today <= config.dailyStepsGoal){
        steps_goal_percent = health_steps_today * 10 / config.dailyStepsGoal;
      }
 
-    
     if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Health Val: %d",health_steps_today );
 
-      graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
+      graphics_fill_radial(ctx, GRect(center.x+13, center.y-55, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * steps_goal_percent));
   }//else{
       //TODO:Color
     //  graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
@@ -478,7 +484,8 @@ static void health_layer_update(Layer *layer, GContext *ctx) {
 */
 
 static void battery_layer_update(Layer *layer, GContext *ctx) {
- 
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(layer);  
+  GPoint center = grect_center_point(&unobstructed_bounds);
 // 42, 48  ---- 23 radius
 // Dibujar el circulo que servirá para la bateria
   if (config.enableBattery && config.enableInfoLeft){
@@ -492,7 +499,7 @@ static void battery_layer_update(Layer *layer, GContext *ctx) {
   // } 
     if (DEBUG)
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Battery Val: %i", 36 * s_last_battery.charge_percent);
-    graphics_fill_radial(ctx, GRect(23, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
+    graphics_fill_radial(ctx, GRect(center.x-49, center.y-55, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(36 * (s_last_battery.charge_percent/10)));
   }//else{
     //graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
     //graphics_fill_radial(ctx, GRect(83, 29, 39, 39), GOvalScaleModeFitCircle, 3, 0, DEG_TO_TRIGANGLE(360));
@@ -667,9 +674,9 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
       graphics_context_set_stroke_color(ctx, GColorFromHEX(config.hourMarkersColor));
       graphics_context_set_fill_color(ctx, GColorFromHEX(config.backgroundcolor));
     }  
-    graphics_draw_rect(ctx, GRect(64, center_seconds.y+5, 17, 15));  
-    graphics_fill_rect(ctx, GRect(63, center_seconds.y+10, 18,5), 0, GCornersAll);  
-    graphics_fill_rect(ctx, GRect(69, center_seconds.y+5, 6,16), 0, GCornersAll);  
+    graphics_draw_rect(ctx, GRect(center_seconds.x-8, center_seconds.y+5, 17, 15));  
+    graphics_fill_rect(ctx, GRect(center_seconds.x-9, center_seconds.y+10, 18,5), 0, GCornersAll);  
+    graphics_fill_rect(ctx, GRect(center_seconds.x-3, center_seconds.y+5, 6,16), 0, GCornersAll);  
 
     // Dibujar el circulo de los dias de la semana
 
@@ -683,10 +690,54 @@ static void bg_update_seconds_proc(Layer *layer, GContext *ctx) {
   Este procedimiento dibuja el fondo de la watchface
  */
 static void bg_update_proc(Layer *layer, GContext *ctx) {
- 
   GRect bounds = layer_get_bounds(layer);  
   GPoint center = grect_center_point(&bounds);
+  #if defined(PBL_ROUND)
+  if ( config.enableMinutesMarks ){
+    for(int m = 0; m < 60; m++) { 
+      GPoint point = (GPoint) {
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(HANDS_TOP_ROUND) / TRIG_MAX_RATIO) + center.x,
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * (int32_t)(HANDS_TOP_ROUND) / TRIG_MAX_RATIO) + center.y,
+          };
 
+          GPoint point02 = (GPoint) {
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * m / 60) * (HANDS_TOP_ROUND - MINUTE_HAND_MINUS_ROUND) / TRIG_MAX_RATIO) + center.x,
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * m / 60) * (HANDS_TOP_ROUND - MINUTE_HAND_MINUS_ROUND) / TRIG_MAX_RATIO) + center.y,
+          };
+
+         
+              
+          graphics_context_set_stroke_color(ctx, GColorFromHEX(config.minuteMarkersColor));
+          graphics_context_set_fill_color(ctx, GColorFromHEX(config.minuteMarkersColor));
+          graphics_draw_line(ctx, GPoint(point02.x , point02.y ), GPoint(point.x , point.y));
+              
+    }
+
+
+  }
+  if ( config.enableHourMarks ){
+    for(int h = 0; h < 12; h++) { 
+
+          GPoint point = (GPoint) {
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(HANDS_TOP_ROUND) / TRIG_MAX_RATIO) + center.x,
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(HANDS_TOP_ROUND) / TRIG_MAX_RATIO) + center.y,
+          };
+
+          GPoint point02 = (GPoint) {
+            .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (HANDS_TOP_ROUND - HOUR_HAND_MINUS_ROUND) / TRIG_MAX_RATIO) + center.x,
+            .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (HANDS_TOP_ROUND - HOUR_HAND_MINUS_ROUND) / TRIG_MAX_RATIO) + center.y,
+          };
+
+            
+            
+
+            graphics_context_set_fill_color(ctx,GColorFromHEX(config.hourMarkersColor));
+            graphics_fill_circle(ctx, point02, 4);
+      
+    }
+  }
+
+  #else
 
   // Marcas 
   if ( config.enableMinutesMarks ){
@@ -718,9 +769,6 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
 
   if ( config.enableHourMarks ){
     for(int h = 0; h < 12; h++) { 
-
-
-
           GPoint point = (GPoint) {
             .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.x,
             .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * h / 12) * (int32_t)(3 * (CONFIG_HAND_LENGTH_MIN)) / TRIG_MAX_RATIO) + center.y,
@@ -751,6 +799,7 @@ static void bg_update_proc(Layer *layer, GContext *ctx) {
       
     }
   }
+  #endif
 }
 
 
@@ -816,14 +865,14 @@ static void draw_proc(Layer *layer, GContext *ctx) {
               graphics_draw_line(ctx, GPoint(center_seconds.x + x , center_seconds.y+y ), GPoint(second_hand_inverted.x+x, second_hand_inverted.y+y ));
             }
           }
-        }
+     
            // El centro de los segundos
           
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.infoCirclesColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.infoCirclesColor));         
 
         graphics_fill_circle(ctx, GPoint(center_seconds.x , center_seconds.y ), 2);
-      
+        }
       
         graphics_context_set_stroke_color(ctx, GColorFromHEX(config.smallHandsColor));
         graphics_context_set_fill_color(ctx, GColorFromHEX(config.smallHandsColor));
@@ -879,7 +928,7 @@ static void draw_proc(Layer *layer, GContext *ctx) {
 
 
 
-  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_CHALK) 
     // Move paths depends on the minutes or hours
     if (s_last_time.minutes == 0 ||  s_last_time.minutes == 15 || s_last_time.minutes == 30 || s_last_time.minutes == 45){
       gpath_move_to(s_minute_hand_path_bold_ptr, GPoint(200, 200));
@@ -1180,57 +1229,40 @@ static void window_load(Window *window) {
   #endif
  
  // DIA DEL MES
-  s_day_in_month_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
+  s_day_in_month_layer = text_layer_create(GRect(center_normal.x-22, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
   text_layer_set_text_alignment(s_day_in_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_day_in_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_color(s_day_in_month_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_day_in_month_layer, GColorClear);
   //text_layer_set_text(s_day_in_month_layer, "31");  
 
-  s_day_in_month_layer_popup = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
+  s_day_in_month_layer_popup = text_layer_create(GRect(center_normal.x-22, center_normal.y+SECONDS_CENTER_OFFSET_Y+3, 44, 40));
   text_layer_set_text_alignment(s_day_in_month_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_day_in_month_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_color(s_day_in_month_layer_popup, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_day_in_month_layer_popup, GColorClear);
 
-  // DIA DE LA SEMANA
-  if (SHOWINFOCIRCLES){
-    s_weekday_layer = text_layer_create(GRect(20, 30, 44, 40));
-  }else{
-    s_weekday_layer = text_layer_create(GRect(40, 35, 44, 40));
-  }
+  s_weekday_layer = text_layer_create(GRect(center_normal.x-52, center_normal.y-54, 44, 40));
   text_layer_set_text_alignment(s_weekday_layer, GTextAlignmentCenter);
   text_layer_set_font(s_weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_weekday_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weekday_layer, GColorClear);
 
 // DIA DE LA SEMANA
-  if (SHOWINFOCIRCLES){
-    s_weekday_layer_popup = text_layer_create(GRect(20, 30, 44, 40));
-  }else{
-    s_weekday_layer_popup = text_layer_create(GRect(40, 35, 44, 40));
-  }
+  s_weekday_layer_popup = text_layer_create(GRect(center_normal.x-52, center_normal.y-54, 44, 40));
   text_layer_set_text_alignment(s_weekday_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_weekday_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_weekday_layer_popup, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weekday_layer_popup, GColorClear);
  
   // MES
-  if (SHOWINFOCIRCLES){
-    s_month_layer = text_layer_create(GRect(80, 30, 44, 40));
-  }else{
-    s_month_layer = text_layer_create(GRect(60, 35, 44, 40));
-  }
+  s_month_layer = text_layer_create(GRect(center_normal.x+8, center_normal.y-54, 44, 40));
   text_layer_set_text_alignment(s_month_layer, GTextAlignmentCenter);
   text_layer_set_font(s_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_month_layer, GColorFromHEX(config.dayInMonthcolor)); 
   text_layer_set_background_color(s_month_layer, GColorClear);
 
-  if (SHOWINFOCIRCLES){
-    s_month_layer_popup = text_layer_create(GRect(80, 30, 44, 40));
-  }else{
-    s_month_layer_popup = text_layer_create(GRect(60, 35, 44, 40));
-  }
+  s_month_layer_popup = text_layer_create(GRect(center_normal.x+8, center_normal.y-54, 44, 40));
   text_layer_set_text_alignment(s_month_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_month_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_month_layer_popup, GColorFromHEX(config.dayInMonthcolor)); 
@@ -1244,84 +1276,84 @@ static void window_load(Window *window) {
   text_layer_set_background_color(s_digital_time_layer, GColorClear);
 
   // CAPAS DE LAS HORAS
-  s_12_hour_layer = text_layer_create(GRect(XPOS_12H, YPOS_12H, XLENHOURS, YLENHOURS));
+  s_12_hour_layer = text_layer_create(GRect(center.x-XPOS_12H, center.y-YPOS_12H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_12_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_12_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_12_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_12_hour_layer, GColorClear);
   text_layer_set_text(s_12_hour_layer, "12");  
 
-  s_01_hour_layer = text_layer_create(GRect(XPOS_01H, YPOS_01H, XLENHOURS, YLENHOURS));
+  s_01_hour_layer = text_layer_create(GRect(center.x+XPOS_01H, center.y-YPOS_01H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_01_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_01_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_01_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_01_hour_layer, GColorClear);
   text_layer_set_text(s_01_hour_layer, "1");  
 
-  s_02_hour_layer = text_layer_create(GRect(XPOS_02H, YPOS_02H, XLENHOURS, YLENHOURS));
+  s_02_hour_layer = text_layer_create(GRect(center.x+XPOS_02H, center.y-YPOS_02H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_02_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_02_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_02_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_02_hour_layer, GColorClear);
   text_layer_set_text(s_02_hour_layer, "2");  
 
-  s_03_hour_layer = text_layer_create(GRect(XPOS_03H, YPOS_03H, XLENHOURS, YLENHOURS));
+  s_03_hour_layer = text_layer_create(GRect(center.x+XPOS_03H, center.y-YPOS_03H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_03_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_03_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_03_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_03_hour_layer, GColorClear);
   text_layer_set_text(s_03_hour_layer, "3");  
 
-  s_04_hour_layer = text_layer_create(GRect(XPOS_04H, YPOS_04H, XLENHOURS, YLENHOURS));
+  s_04_hour_layer = text_layer_create(GRect(center.x+XPOS_04H, center.y+YPOS_04H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_04_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_04_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_04_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_04_hour_layer, GColorClear);
   text_layer_set_text(s_04_hour_layer, "4");  
 
-  s_05_hour_layer = text_layer_create(GRect(XPOS_05H, YPOS_05H, XLENHOURS, YLENHOURS));
+  s_05_hour_layer = text_layer_create(GRect(center.x+XPOS_05H, center.y+YPOS_05H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_05_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_05_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_05_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_05_hour_layer, GColorClear);
   text_layer_set_text(s_05_hour_layer, "5");  
 
-  s_06_hour_layer = text_layer_create(GRect(XPOS_06H, YPOS_06H, XLENHOURS, YLENHOURS));
+  s_06_hour_layer = text_layer_create(GRect(center.x-XPOS_06H, center.y+YPOS_06H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_06_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_06_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_06_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_06_hour_layer, GColorClear);
   text_layer_set_text(s_06_hour_layer, "6");  
 
-  s_07_hour_layer = text_layer_create(GRect(XPOS_07H, YPOS_07H, XLENHOURS, YLENHOURS));
+  s_07_hour_layer = text_layer_create(GRect(center.x-XPOS_07H, center.y+YPOS_07H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_07_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_07_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_07_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_07_hour_layer, GColorClear);
   text_layer_set_text(s_07_hour_layer, "7");  
 
-  s_08_hour_layer = text_layer_create(GRect(XPOS_08H, YPOS_08H, XLENHOURS, YLENHOURS));
+  s_08_hour_layer = text_layer_create(GRect(center.x-XPOS_08H, center.y+YPOS_08H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_08_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_08_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_08_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_08_hour_layer, GColorClear);
   text_layer_set_text(s_08_hour_layer, "8");  
 
-  s_09_hour_layer = text_layer_create(GRect(XPOS_09H, YPOS_09H, XLENHOURS, YLENHOURS));
+  s_09_hour_layer = text_layer_create(GRect(center.x-XPOS_09H, center.y-YPOS_09H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_09_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_09_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_09_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_09_hour_layer, GColorClear);
   text_layer_set_text(s_09_hour_layer, "9");  
 
-  s_10_hour_layer = text_layer_create(GRect(XPOS_10H, YPOS_10H, XLENHOURS, YLENHOURS));
+  s_10_hour_layer = text_layer_create(GRect(center.x-XPOS_10H, center.y-YPOS_10H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_10_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_10_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_10_hour_layer, GColorFromHEX(config.numbersColor));
   text_layer_set_background_color(s_10_hour_layer, GColorClear);
   text_layer_set_text(s_10_hour_layer, "10");  
 
-  s_11_hour_layer = text_layer_create(GRect(XPOS_11H, YPOS_11H, XLENHOURS, YLENHOURS));
+  s_11_hour_layer = text_layer_create(GRect(center.x-XPOS_11H, center.y-YPOS_11H, XLENHOURS, YLENHOURS));
   text_layer_set_text_alignment(s_11_hour_layer, GTextAlignmentCenter);
   text_layer_set_font(s_11_hour_layer, fonts_get_system_font(TIME_NUMERALS_FONT));
   text_layer_set_text_color(s_11_hour_layer, GColorFromHEX(config.numbersColor));
@@ -1329,14 +1361,14 @@ static void window_load(Window *window) {
   text_layer_set_text(s_11_hour_layer, "11");  
 
 
-  s_weather_layer = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
+  s_weather_layer = text_layer_create(GRect(center_normal.x-22, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_font(s_weather_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_weather_layer, GColorFromHEX(config.dayInMonthcolor));
   text_layer_set_background_color(s_weather_layer, GColorClear);
   text_layer_set_text(s_weather_layer, s_temp_buffer);
 
-  s_weather_layer_popup = text_layer_create(GRect(50, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
+  s_weather_layer_popup = text_layer_create(GRect(center_normal.x-22, center_normal.y+SECONDS_CENTER_OFFSET_Y-19, 44, 40));
   text_layer_set_text_alignment(s_weather_layer_popup, GTextAlignmentCenter);
   text_layer_set_font(s_weather_layer_popup, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_weather_layer_popup, GColorFromHEX(config.dayInMonthcolor));
@@ -1411,7 +1443,7 @@ static void window_load(Window *window) {
   layer_set_hidden(text_layer_get_layer(s_weekday_layer_popup), true);
   layer_set_hidden(text_layer_get_layer(s_day_in_month_layer_popup), true);
   
-  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_CHALK) 
 
    s_hour_hand_path_bold_ptr = gpath_create(&HOUR_HAND_PATH_BOLD);
    s_minute_hand_path_bold_ptr = gpath_create(&MINUTE_HAND_PATH_BOLD);
@@ -1462,7 +1494,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_connection_layer);
   layer_destroy(s_popup_layer);
   text_layer_destroy(s_weather_layer);
-  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) 
+  #if defined(PBL_PLATFORM_BASALT) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_CHALK) 
   gpath_destroy(s_hour_hand_path_ptr);
   gpath_destroy(s_minute_hand_path_ptr);
   gpath_destroy(s_hour_hand_path_bold_ptr);
