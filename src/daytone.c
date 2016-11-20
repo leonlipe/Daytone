@@ -49,32 +49,32 @@ static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hou
 
 static const GPathInfo MINUTE_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) { {-3, PATH_HANDS_INVERSE_LEGTH}, 
-                          {-3, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {3, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {3, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) { {PATH_HANDS_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_TICK_LIGHT, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{-3, PATH_HANDS_INVERSE_LEGTH}, 
-                          {-3, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {3, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {3, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_TICK_LIGHT, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
 };
 
 static const GPathInfo MINUTE_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, 
-                          {-4, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {4, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {4, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_TICK_BOLD*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_TICK_BOLD, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{-4, PATH_HANDS_INVERSE_LEGTH}, 
-                          {-4, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {4, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {4, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_TICK_BOLD*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_TICK_BOLD, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
 };
 #endif
 
