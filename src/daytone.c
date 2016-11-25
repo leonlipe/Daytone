@@ -49,32 +49,32 @@ static GPath *s_hour_hand_path_ptr = NULL, *s_minute_hand_path_ptr = NULL,*s_hou
 
 static const GPathInfo MINUTE_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) { {PATH_HANDS_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
-                          {PATH_HANDS_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {PATH_HANDS_TICK_LIGHT, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {PATH_HANDS_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) { {PATH_HANDS_MINUTE_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_MINUTE_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_MINUTE_TICK_LIGHT, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_MINUTE_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH = {
   .num_points = 4,
-  .points = (GPoint []) {{PATH_HANDS_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
-                          {PATH_HANDS_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {PATH_HANDS_TICK_LIGHT, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {PATH_HANDS_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_HOUR_TICK_LIGHT*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_HOUR_TICK_LIGHT*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_HOUR_TICK_LIGHT, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_HOUR_TICK_LIGHT, PATH_HANDS_INVERSE_LEGTH}}
 };
 
 static const GPathInfo MINUTE_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{PATH_HANDS_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
-                          {PATH_HANDS_TICK_BOLD*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {PATH_HANDS_TICK_BOLD, CONFIG_HAND_LENGTH_MIN*-1}, 
-                          {PATH_HANDS_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_MINUTE_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_MINUTE_TICK_BOLD*-1, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_MINUTE_TICK_BOLD, CONFIG_HAND_LENGTH_MIN*-1}, 
+                          {PATH_HANDS_MINUTE_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
 };
 static const GPathInfo HOUR_HAND_PATH_BOLD = {
   .num_points = 4,
-  .points = (GPoint []) {{PATH_HANDS_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
-                          {PATH_HANDS_TICK_BOLD*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {PATH_HANDS_TICK_BOLD, CONFIG_HAND_LENGTH_HOUR*-1}, 
-                          {PATH_HANDS_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
+  .points = (GPoint []) {{PATH_HANDS_HOUR_TICK_BOLD*-1, PATH_HANDS_INVERSE_LEGTH}, 
+                          {PATH_HANDS_HOUR_TICK_BOLD*-1, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_HOUR_TICK_BOLD, CONFIG_HAND_LENGTH_HOUR*-1}, 
+                          {PATH_HANDS_HOUR_TICK_BOLD, PATH_HANDS_INVERSE_LEGTH}}
 };
 #endif
 
@@ -2080,10 +2080,10 @@ static void init() {
   accel_tap_service_subscribe(accel_tap_handler);
 
   // Subscribe to connection service
-  connection_service_subscribe((ConnectionHandlers) {
-    .pebble_app_connection_handler = app_connection_handler,
-    .pebblekit_connection_handler = kit_connection_handler
-  });
+  // connection_service_subscribe((ConnectionHandlers) {
+  //   .pebble_app_connection_handler = app_connection_handler,
+  //   .pebblekit_connection_handler = kit_connection_handler
+  // });
   
   // Set window handlers
   window_set_window_handlers(s_main_window, (WindowHandlers) {
